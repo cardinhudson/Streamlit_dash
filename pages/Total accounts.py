@@ -11,7 +11,7 @@ st.set_page_config(layout="wide")
 st.write("Esta página contem o somatório de todas as contas do centro de lucro 02S, exceto as contas D_B!")
 
 # Caminho do arquivo parquet
-arquivo_parquet = r"C:\user\U235107\GitHub\streamlit_dash_deploy\KE5Z\KE5Z.parquet"
+arquivo_parquet = r"KE5Z\KE5Z.parquet"
 
 # Ler o arquivo parquet
 df_total = pd.read_parquet(arquivo_parquet)
