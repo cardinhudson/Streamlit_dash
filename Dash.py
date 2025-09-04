@@ -74,34 +74,33 @@ st.sidebar.write(f"Número de colunas: {df_filtrado.shape[1]}")
 st.sidebar.write(f"Soma do Valor total: R$ {df_filtrado['Valor'].sum():,.2f}")
 
 #%%
-# Incluir um gráfico de barras que mostre a coluna de 'valor' totais por 'periodo' do df_total
-# Agrupar os dados por 'Período' e calcular a soma dos valores
-df_grafico = df_filtrado.groupby('Período')['Valor'].sum().reset_index()
 
-#Criar um grafico de barras simples com o eixo y sendo o valor e o x sendo o período
-# no eixo x mostrar somente valores existentes no df_grafico
-grafico_barras = alt.Chart(df_grafico).mark_bar().encode(
-    x=alt.X('Período:N', title='Período', sort=None),
-    y=alt.Y('Valor:Q', title='Soma do Valor'),
-    tooltip=[alt.Tooltip('Período:N', title='Período'), alt.Tooltip('Valor:Q', title='Soma do Valor', format=',.2f')]
+# Criar um gráfico de barras para a soma dos valores por 'Período' com uma única cor
+grafico_barras = alt.Chart(df_filtrado).mark_bar(color='steelblue').encode(  # Define uma cor fixa para as barras
+    x=alt.X('Período:N', title='Período'),
+    y=alt.Y('sum(Valor):Q', title='Soma do Valor'),
+    tooltip=['Período:N', 'sum(Valor):Q']  # Tooltip para exibir informações
 ).properties(
-    title='Gráfico de Barras - Soma do Valor por Período',
-    width=800,
-    height=400
-).configure_axis(
-    labelFontSize=12,
-    titleFontSize=14
-).configure_title(
-    fontSize=16,
-    anchor='start',
-    color='black'
+    title='Soma do Valor por Período'
 )
 
+# Adicionar os rótulos com os valores nas barras
+rotulos = grafico_barras.mark_text(
+    align='center',
+    baseline='middle',
+    dy=-10,  # Ajuste vertical para posicionar o texto acima das barras
+    color='black',
+    fontSize=12
+).encode(
+    text=alt.Text('sum(Valor):Q', format=',.2f')  # Formatar os valores com duas casas decimais
+)
 
-
+# Combinar o gráfico de barras com os rótulos
+grafico_completo = grafico_barras + rotulos
 
 # Exibir o gráfico no Streamlit
-st.altair_chart(grafico_barras, use_container_width=True)
+st.altair_chart(grafico_completo, use_container_width=True)
+
 
 # %%
 # Exibir 'tabela filtrada com linhas sendo a USI e as colunas sendo o 'Período' e os valores sendo a soma do 'Valor' e incluir valor do total na última linha e coluna
@@ -147,4 +146,3 @@ if st.button("Exportar Soma por Type para Excel"):
     soma_por_type.to_excel(caminho_saida_excel_soma, index=False)
     st.success(f"Soma por Type exportada com sucesso para {caminho_saida_excel_soma}")
 
-print('Lauro é muito lindo')
