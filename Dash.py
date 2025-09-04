@@ -146,3 +146,5 @@ if st.button("Exportar Soma por Type para Excel"):
     caminho_saida_excel_soma = os.path.join(caminho_downloads, 'KE5Z_soma_por_type.xlsx')
     soma_por_type.to_excel(caminho_saida_excel_soma, index=False)
     st.success(f"Soma por Type exportada com sucesso para {caminho_saida_excel_soma}")
+
+print('Lauro é muito lindo')
