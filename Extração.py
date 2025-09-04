@@ -1,11 +1,9 @@
-
-# Importar
 # %%
 import os
 import pandas as pd
 
 # Caminho da pasta com os arquivos
-pasta = r"C:\Users\u235107\Stellantis\GEIB - GEIB\Partagei_2025\1 - SÍNTESE\11 - SAPIENS\02 - Extrações"
+pasta = r"C:\Users\u235107\Stellantis\GEIB - GEIB\Partagei_2025\1 - SÍNTESE\11 - SAPIENS\02 - Extrações\KE5Z"
 
 
 # Lista para armazenar os DataFrames
@@ -28,25 +26,29 @@ for arquivo in os.listdir(pasta):
         
         # Remover espaços em branco dos nomes das colunas
         df.columns = df.columns.str.strip()
-        #Filtrar a coluna 'ano' com valores não nulos e diferentes de 0
-        df = df[df['ano'].notna() & (df['ano'] != 0)]
+        #Filtrar a coluna 'Ano' com valores não nulos e diferentes de 0
+        df = df[df['Ano'].notna() & (df['Ano'] != 0)]
         # Substituir ',' por '.' e remover pontos de separação de milhar
-        df_total['Em MCont.'] = df_total['Em MCont.'].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
+        df['Em MCont.'] = df['Em MCont.'].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
         # Converter a coluna para float, tratando erros
-        df_total['Em MCont.'] = pd.to_numeric(df_total['Em MCont.'], errors='coerce')
+        df['Em MCont.'] = pd.to_numeric(df['Em MCont.'], errors='coerce')
         # Substituir valores NaN por 0 (ou outro valor padrão, se necessário)
-        df_total['Em MCont.'] = df_total['Em MCont.'].fillna(0)
+        df['Em MCont.'] = df['Em MCont.'].fillna(0)
 
         # Substituir ',' por '.' e remover pontos de separação de milhar
-        df_total['Qtd.'] = df_total['Qtd.'].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
+        df['Qtd.'] = df['Qtd.'].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
         # Converter a coluna para float, tratando erros
-        df_total['Qtd.'] = pd.to_numeric(df_total['Qtd.'], errors='coerce')
+        df['Qtd.'] = pd.to_numeric(df['Qtd.'], errors='coerce')
         # Substituir valores NaN por 0 (ou outro valor padrão, se necessário)
-        df_total['Qtd.'] = df_total['Qtd.'].fillna(0)
-
-
-
+        df['Qtd.'] = df['Qtd.'].fillna(0)
+        # Adicionar o DataFrame à lista
         dataframes.append(df)
+        print(df.head(3))
+
+        # Imprimir o valor total da coluna 'Em MCont.'
+        total_em_mcont = df['Em MCont.'].sum()
+        print(f"Total Em MCont. em {arquivo}: {total_em_mcont}")
+        
 
 # Concatenar todos os DataFrames em um único
 df_total = pd.concat(dataframes, ignore_index=True)
@@ -65,11 +67,12 @@ df_total['Cliente'] = df_total['Cliente'].astype(str)
 print(df_total['Em MCont.'])
 
 
+
+
+
 # %%
 # Modificar o nome da coluna 'Em MCont.' para 'Valor'
 df_total.rename(columns={'Em MCont.': 'Valor'}, inplace=True)
-
-
 
 # filtrar a coluna Nº conta não vazias e diferentes de 0
 df_total = df_total[df_total['Nº conta'].notna() & (df_total['Nº conta'] != 0)]
@@ -103,20 +106,19 @@ for arquivo in os.listdir(pasta_ksbb):
         
         # remover as linhas duplicadas pela coluna Material
         df_ksbb = df_ksbb.drop_duplicates(subset=['Material'])
-        
-        
+                
         # Adicionar o DataFrame à lista
         dataframes_ksbb.append(df_ksbb)
 
 
 # Concatenar todos os DataFrames em um único e ignorar caso tenha apenas 1
-df_ksbb_total = pd.concat(dataframes_ksbb, ignore_index=True) if len(dataframes_ksbb) > 1 else dataframes_ksbb[0]
+df_ksbb = pd.concat(dataframes_ksbb, ignore_index=True) if len(dataframes_ksbb) > 1 else dataframes_ksbb[0]
 
 # remover as linhas duplicadas pela coluna Material
 df_ksbb = df_ksbb.drop_duplicates(subset=['Material'])
 
 # merge o df_total com df_ksbb_total pela coluna Material tranzendo a coluna de texto breve material do df_ksbb_total
-df_total = pd.merge(df_total, df_ksbb_total[['Material', 'Texto breve material']], on='Material', how='left')
+df_total = pd.merge(df_total, df_ksbb[['Material', 'Texto breve material']], on='Material', how='left')
 
 # renomear a coluna Texto breve material para Descrição Material
 df_total = df_total.rename(columns={'Texto breve material': 'Descrição Material'})
@@ -126,6 +128,9 @@ print(df_total[['Material', 'Descrição Material']].head(10))
 
 # se  a descrição do material nao for nula substituir o valor da coluna Texto pelo valor da Descrição Material
 df_total['Texto'] = df_total.apply(lambda row: row['Descrição Material'] if pd.notnull(row['Descrição Material']) else row['Texto'], axis=1)
+
+# imprimir os valores totais somarizado por periodo
+print(df_total.groupby('Período')['Valor'].sum())
 
 
 # %%
@@ -148,11 +153,12 @@ df_CC.rename(columns={'CC SAPiens': 'Centro cst'}, inplace=True)
 
 # Merge o df_total com o df_CC pela coluna Centro cst e trazer as colunas Ofincina e USI
 df_total = pd.merge(df_total, df_CC[['Centro cst', 'Oficina', 'USI']], on='Centro cst', how='left')
-print(df_total.head())
+# Substituir na coluna 'USI' os valores NaN por 'Others'
+df_total['USI'] = df_total['USI'].fillna('Others')
+# Exibir as 10 primeiras linhas do df_total e as colunas de Nº conta, Type 07, Type 06, Type 05, Centro cst, Oficina e USI
+print(df_total[['Nº conta', 'Type 07', 'Type 06', 'Type 05', 'Centro cst', 'Oficina', 'USI']].head(10))
 
-
-
-
+# %%
 # gerar um arquivo parquet do df_total atualizado
 pasta_parquet = r"KE5Z"
 caminho_saida_atualizado = os.path.join(pasta_parquet, 'KE5Z.parquet')
@@ -163,4 +169,7 @@ print(f"Arquivo salvo em: \n {caminho_saida_atualizado}")
 caminho_saida_excel = os.path.join(pasta_parquet, 'KE5Z.xlsx')
 df_total.head(10000).to_excel(caminho_saida_excel, index=False)
 print(f"Arquivo Excel salvo em: \n {caminho_saida_excel}")
+
+
+
 
