@@ -89,7 +89,7 @@ rotulos = grafico_barras.mark_text(
     align='center',
     baseline='middle',
     dy=-10,  # Ajuste vertical para posicionar o texto acima das barras
-    color='black',
+    color='white',
     fontSize=12
 ).encode(
     text=alt.Text('sum(Valor):Q', format=',.2f')  # Formatar os valores com duas casas decimais
