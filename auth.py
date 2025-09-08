@@ -158,21 +158,47 @@ def tela_login():
             else:
                 st.info("✅ Nenhum usuário pendente de aprovação.")
         
-        # Listar todos os usuários
-        with st.expander("📋 Todos os Usuários"):
+        # Listar todos os usuários com opção de exclusão
+        with st.expander("📋 Gerenciar Todos os Usuários"):
             if usuarios:
                 st.write("**Usuários cadastrados:**")
+                
                 for usuario, dados in usuarios.items():
-                    status_icon = "✅" if dados.get('status') == 'aprovado' else "⏳"
-                    status_text = "Aprovado" if dados.get('status') == 'aprovado' else "Pendente"
-                    admin_text = " (Admin)" if usuario == 'admin' else ""
+                    col1, col2, col3 = st.columns([3, 1, 1])
                     
-                    st.write(f"{status_icon} **{usuario}**{admin_text} - {status_text}")
-                    if dados.get('email'):
-                        st.write(f"   📧 {dados['email']}")
-                    st.write(f"   📅 Criado: {dados.get('data_criacao', 'N/A')}")
-                    if dados.get('aprovado_em'):
-                        st.write(f"   ✅ Aprovado: {dados.get('aprovado_em', 'N/A')}")
+                    with col1:
+                        status_icon = "✅" if dados.get('status') == 'aprovado' else "⏳"
+                        status_text = "Aprovado" if dados.get('status') == 'aprovado' else "Pendente"
+                        admin_text = " (Admin)" if usuario == 'admin' else ""
+                        
+                        st.write(f"{status_icon} **{usuario}**{admin_text} - {status_text}")
+                        if dados.get('email'):
+                            st.write(f"   📧 {dados['email']}")
+                        st.write(f"   📅 Criado: {dados.get('data_criacao', 'N/A')}")
+                        if dados.get('aprovado_em'):
+                            st.write(f"   ✅ Aprovado: {dados.get('aprovado_em', 'N/A')}")
+                    
+                    with col2:
+                        if usuario != 'admin':  # Admin não pode ser excluído
+                            if st.button(f"🗑️ Excluir", key=f"excluir_{usuario}", type="secondary"):
+                                # Confirmar exclusão
+                                if st.session_state.get(f"confirmar_exclusao_{usuario}", False):
+                                    # Excluir usuário
+                                    del usuarios[usuario]
+                                    salvar_usuarios(usuarios)
+                                    st.success(f"✅ Usuário '{usuario}' excluído com sucesso!")
+                                    st.rerun()
+                                else:
+                                    st.session_state[f"confirmar_exclusao_{usuario}"] = True
+                                    st.warning(f"⚠️ Clique novamente para confirmar a exclusão de '{usuario}'")
+                        else:
+                            st.write("🔒 Protegido")
+                    
+                    with col3:
+                        if st.button(f"👁️ Ver", key=f"ver_detalhes_{usuario}"):
+                            st.write(f"**Detalhes do usuário {usuario}:**")
+                            st.json(dados)
+                    
                     st.markdown("---")
             else:
                 st.info("Nenhum usuário cadastrado.")

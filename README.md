@@ -95,8 +95,10 @@ Dashboard interativo para visualização de dados TC - KE5Z com sistema de auten
 3. **Aprovar:** Veja usuários pendentes e clique em "✅ Aprovar"
 4. **Rejeitar:** Ou clique em "❌ Rejeitar" para remover o usuário
 5. **Visualizar:** Use "👁️ Ver" para ver detalhes do usuário
+6. **Excluir:** Na seção "📋 Gerenciar Todos os Usuários", clique em "🗑️ Excluir"
 
 **🔐 SEGURANÇA:** Usuários só podem acessar o sistema após aprovação do admin!
+**🛡️ PROTEÇÃO:** O usuário admin NÃO pode ser excluído do sistema!
 
 ### Alterar Senha
 **TODOS OS USUÁRIOS PODEM ALTERAR SUAS PRÓPRIAS SENHAS**
