@@ -23,8 +23,8 @@ def testar_dashboard():
         print("📦 Testando importações...")
         result = subprocess.run([
             venv_python, "-c", 
-            "import streamlit, pandas, altair, openpyxl, pyarrow; print('✅ Todas as dependências importadas com sucesso!')"
-        ], capture_output=True, text=True, check=True)
+            "import streamlit, pandas, altair, openpyxl, pyarrow; print('Todas as dependencias importadas com sucesso!')"
+        ], capture_output=True, text=True, check=True, encoding='utf-8')
         
         print(result.stdout)
         

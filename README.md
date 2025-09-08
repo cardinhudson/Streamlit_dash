@@ -61,7 +61,13 @@ Dashboard interativo para visualização de dados TC - KE5Z com sistema de auten
    streamlit run Dash.py
    ```
 
-## 🔐 Sistema de Login
+## 🔐 Sistema de Login - PROTEÇÃO COMPLETA
+
+### 🛡️ Proteção Total
+- **TODAS as páginas** são protegidas por autenticação
+- **Nenhuma página** pode ser acessada sem login
+- **Sistema centralizado** de autenticação em `auth.py`
+- **Proteção automática** em todas as páginas do Streamlit
 
 ### Primeiro Acesso
 - **Usuário**: `admin`
@@ -72,6 +78,12 @@ Dashboard interativo para visualização de dados TC - KE5Z com sistema de auten
 1. Faça login com o usuário administrador
 2. Na tela de login, expanda "👨‍💼 Área Administrativa"
 3. Adicione novos usuários conforme necessário
+
+### Páginas Protegidas
+- ✅ **Dashboard Principal** (`Dash.py`)
+- ✅ **Outside TC** (`pages/Outside TC.py`)
+- ✅ **Total Accounts** (`pages/Total accounts.py`)
+- ✅ **Todas as futuras páginas** (se seguirem o padrão)
 
 ## 📁 Estrutura do Projeto
 
@@ -138,8 +150,12 @@ streamlit run Dash.py
 
 ### Erro de dependências
 ```bash
-pip install --upgrade pip
-pip install -r requirements.txt --force-reinstall
+# Opção 1: Script automático
+python corrigir_venv.py
+
+# Opção 2: Manual
+venv\Scripts\python.exe -m pip install --upgrade pip
+venv\Scripts\python.exe -m pip install -r requirements.txt --force-reinstall
 ```
 
 ### Erro de permissão (Windows)
@@ -150,8 +166,51 @@ Execute o PowerShell como administrador
 streamlit run Dash.py --server.port 8502
 ```
 
+### Erro de codificação de caracteres
+Execute: `python corrigir_venv.py`
+
+### Testar se está funcionando
+```bash
+python testar_dashboard.py
+```
+
+## 📝 Como Criar Novas Páginas Protegidas
+
+Para criar uma nova página que seja automaticamente protegida, use este template:
+
+```python
+import streamlit as st
+from auth import verificar_autenticacao, exibir_header_usuario
+
+# Configuração da página
+st.set_page_config(
+    page_title="Nova Página - Dashboard KE5Z",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# OBRIGATÓRIO: Verificar autenticação no início
+verificar_autenticacao()
+
+# Header com informações do usuário
+col1, col2, col3 = st.columns([2, 1, 1])
+with col1:
+    st.title("📊 Título da Nova Página")
+    st.subheader("Subtítulo da página")
+
+# Exibir header do usuário
+exibir_header_usuario()
+
+st.markdown("---")
+
+# Seu conteúdo aqui...
+st.write("Conteúdo da nova página protegida")
+```
+
 ## 📝 Notas
 
 - O arquivo `usuarios.json` contém dados sensíveis e não deve ser versionado
 - O ambiente virtual (`venv/`) não deve ser versionado
 - Use sempre o ambiente virtual para evitar conflitos de dependências
+- **IMPORTANTE**: Sempre chame `verificar_autenticacao()` no início de cada página
