@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import os
 import altair as alt
-from auth import verificar_autenticacao, exibir_header_usuario
+from auth import verificar_autenticacao, exibir_header_usuario, eh_administrador, alterar_senha_usuario, verificar_status_aprovado
 
 # Configuração da página
 st.set_page_config(
@@ -15,6 +15,12 @@ st.set_page_config(
 
 # Verificar autenticação - OBRIGATÓRIO no início de cada página
 verificar_autenticacao()
+
+# Verificar se o usuário está aprovado
+if not verificar_status_aprovado(st.session_state.usuario_nome):
+    st.warning("⏳ Sua conta ainda está pendente de aprovação. Aguarde o administrador aprovar seu acesso.")
+    st.info("📧 Você receberá uma notificação quando sua conta for aprovada.")
+    st.stop()
 
 # Caminho do arquivo parquet
 arquivo_parquet = os.path.join("KE5Z", "KE5Z.parquet")
@@ -77,6 +83,56 @@ if conta_contabil_selecionadas:
 st.sidebar.write(f"Número de linhas: {df_filtrado.shape[0]}")
 st.sidebar.write(f"Número de colunas: {df_filtrado.shape[1]}")
 st.sidebar.write(f"Soma do Valor total: R$ {df_filtrado['Valor'].sum():,.2f}")
+
+# Seção administrativa (apenas para admin)
+if eh_administrador():
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("👑 Área Administrativa")
+    
+    with st.sidebar.expander("Gerenciar Usuários"):
+        st.write("**Adicionar novo usuário:**")
+        
+        with st.form("admin_add_user_form"):
+            novo_usuario = st.text_input("Usuário:", key="admin_novo_usuario")
+            nova_senha = st.text_input("Senha:", type="password", key="admin_nova_senha")
+            confirmar_senha = st.text_input("Confirmar Senha:", type="password", key="admin_confirmar_senha")
+            
+            if st.form_submit_button("Cadastrar Usuário", use_container_width=True):
+                if nova_senha == confirmar_senha and novo_usuario and nova_senha:
+                    from auth import carregar_usuarios, salvar_usuarios, criar_hash_senha
+                    from datetime import datetime
+                    
+                    usuarios = carregar_usuarios()
+                    if novo_usuario not in usuarios:
+                        usuarios[novo_usuario] = {
+                            'senha': criar_hash_senha(nova_senha),
+                            'data_criacao': datetime.now().isoformat()
+                        }
+                        salvar_usuarios(usuarios)
+                        st.success(f"✅ Usuário '{novo_usuario}' cadastrado com sucesso!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Usuário já existe!")
+                else:
+                    st.error("❌ Preencha todos os campos e confirme a senha corretamente!")
+        
+        # Listar usuários existentes
+        st.write("**Usuários cadastrados:**")
+        from auth import carregar_usuarios
+        usuarios = carregar_usuarios()
+        for usuario in usuarios.keys():
+            if usuario == 'admin':
+                st.write(f"👑 {usuario} (Administrador)")
+            else:
+                st.write(f"👤 {usuario}")
+else:
+    st.sidebar.markdown("---")
+    st.sidebar.info("🔒 Apenas o administrador pode gerenciar usuários.")
+
+# Seção para alterar senha (disponível para todos os usuários)
+st.sidebar.markdown("---")
+st.sidebar.subheader("🔑 Minha Conta")
+alterar_senha_usuario()
 
 
 

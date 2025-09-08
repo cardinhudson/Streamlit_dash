@@ -72,12 +72,47 @@ Dashboard interativo para visualização de dados TC - KE5Z com sistema de auten
 ### Primeiro Acesso
 - **Usuário**: `admin`
 - **Senha**: `admin123`
+- **Status**: ✅ **APROVADO** (pode acessar o sistema)
 - **IMPORTANTE**: Altere a senha padrão após o primeiro login!
 
-### Cadastrar Usuários
-1. Faça login com o usuário administrador
-2. Na tela de login, expanda "👨‍💼 Área Administrativa"
-3. Adicione novos usuários conforme necessário
+### Sistema de Aprovação de Usuários
+**NOVO SISTEMA: USUÁRIOS SE CADASTRAM E AGUARDAM APROVAÇÃO DO ADMIN**
+
+#### Para Usuários Comuns:
+1. **Cadastro:** Na tela de login, expanda "📝 Cadastro de Usuário"
+2. **Preencha:** Usuário, senha, confirmação de senha e email (opcional)
+3. **Aguarde:** Sua conta ficará com status "Pendente" até aprovação do admin
+4. **Notificação:** Você receberá uma notificação quando for aprovado
+
+#### Para Administrador:
+1. **Login:** Faça login com o usuário **admin**
+2. **Gerenciar:** Na tela de login, expanda "👨‍💼 Área Administrativa"
+3. **Aprovar:** Veja usuários pendentes e clique em "✅ Aprovar"
+4. **Rejeitar:** Ou clique em "❌ Rejeitar" para remover o usuário
+5. **Visualizar:** Use "👁️ Ver" para ver detalhes do usuário
+
+**🔐 SEGURANÇA:** Usuários só podem acessar o sistema após aprovação do admin!
+
+### Alterar Senha
+**TODOS OS USUÁRIOS PODEM ALTERAR SUAS PRÓPRIAS SENHAS**
+
+#### **Opção 1: No Dashboard (usuário logado)**
+1. Faça login com seu usuário
+2. No sidebar, use a seção "🔑 Minha Conta"
+3. **Interface automática:** Mostra qual usuário está alterando a senha
+4. Digite sua senha atual e a nova senha
+5. Confirme a nova senha e clique em "Alterar Senha"
+
+#### **Opção 2: Na Tela de Login (sem estar logado)**
+1. **NÃO precisa fazer login primeiro**
+2. Na tela de login, expanda "🔑 Alterar Minha Senha"
+3. **Informe o nome de usuário** que deseja alterar a senha
+4. Digite a senha atual e a nova senha
+5. Confirme a nova senha e clique em "Alterar Senha"
+
+**🔐 Segurança:** É necessário informar a senha atual para alterar a senha!
+**👤 Transparência:** A interface mostra claramente qual usuário está alterando a senha!
+**✅ Flexibilidade:** Pode alterar senha mesmo sem estar logado no sistema!
 
 ### Páginas Protegidas
 - ✅ **Dashboard Principal** (`Dash.py`)
