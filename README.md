@@ -75,6 +75,11 @@ Dashboard interativo para visualização de dados TC - KE5Z com sistema de auten
 - **Status**: ✅ **APROVADO** (pode acessar o sistema)
 - **IMPORTANTE**: Altere a senha padrão após o primeiro login!
 
+### Usuários de Teste Disponíveis
+- **👑 Admin**: `admin` / `admin123` (aprovado)
+- **👤 Hudson**: `hudson` / `hudson123` (aprovado)
+- **👤 Teste**: `usuario_teste` / `senha123` (pendente)
+
 ### Sistema de Aprovação de Usuários
 **NOVO SISTEMA: USUÁRIOS SE CADASTRAM E AGUARDAM APROVAÇÃO DO ADMIN**
 
