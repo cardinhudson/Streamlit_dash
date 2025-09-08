@@ -78,6 +78,8 @@ st.sidebar.write(f"Número de linhas: {df_filtrado.shape[0]}")
 st.sidebar.write(f"Número de colunas: {df_filtrado.shape[1]}")
 st.sidebar.write(f"Soma do Valor total: R$ {df_filtrado['Valor'].sum():,.2f}")
 
+
+
 #%%
 
 # Criar um gráfico de barras para a soma dos valores por 'Período' com uma única cor
@@ -146,3 +148,63 @@ if st.button("Exportar Soma por Type para Excel"):
     caminho_saida_excel_soma = os.path.join(caminho_downloads, 'KE5Z_soma_por_type.xlsx')
     soma_por_type.to_excel(caminho_saida_excel_soma, index=False)
     st.success(f"Soma por Type exportada com sucesso para {caminho_saida_excel_soma}")
+
+
+# %%
+# Criar um gráfico de barras para a soma dos valores por 'Type 05', 'Type 06' e 'Type 07'
+# classificado em ordem decrescente
+grafico_barras = alt.Chart(df_filtrado).mark_bar(color='steelblue').encode(  # Define uma cor fixa para as barras
+    x=alt.X('Type 05:N', title='Type 05', sort=alt.SortField(field='sum(Valor):Q', order='descending')),
+    y=alt.Y('sum(Valor):Q', title='Soma do Valor'),
+    tooltip=['Type 05:N', 'sum(Valor):Q']  # Tooltip para exibir informações
+).properties(
+    title='Soma do Valor por Type 05'
+)
+
+# Adicionar os rótulos com os valores nas barras
+rotulos = grafico_barras.mark_text(
+    align='center',
+    baseline='middle',
+    dy=-10,  # Ajuste vertical para posicionar o texto acima das barras
+    color='white',
+    fontSize=12
+).encode(
+    text=alt.Text('sum(Valor):Q', format=',.2f')  # Formatar os valores com duas casas decimais
+)
+
+# Combinar o gráfico de barras com os rótulos
+grafico_completo = grafico_barras + rotulos
+
+# Exibir o gráfico no Streamlit
+st.altair_chart(grafico_completo, use_container_width=True)
+
+# Criar dados agregados para Type 06 ordenados por valor decrescente
+df_type06_agg = df_filtrado.groupby('Type 06')['Valor'].sum().reset_index()
+df_type06_agg = df_type06_agg.sort_values('Valor', ascending=False)
+
+# Gráfico de barras para a soma dos valores por 'Type 06' em ordem decrescente
+grafico_barras = alt.Chart(df_type06_agg).mark_bar(color='steelblue').encode(  # Define uma cor fixa para as barras
+    x=alt.X('Type 06:N', title='Type 06', sort=None),  # Sem ordenação automática, dados já ordenados
+    y=alt.Y('Valor:Q', title='Soma do Valor'),
+    tooltip=['Type 06:N', 'Valor:Q']  # Tooltip para exibir informações
+).properties(
+    title='Soma do Valor por Type 06'
+)
+
+# Adicionar os rótulos com os valores nas barras
+rotulos = grafico_barras.mark_text(
+    align='center',
+    baseline='middle',
+    dy=-10,  # Ajuste vertical para posicionar o texto acima das barras
+    color='white',
+    fontSize=12
+).encode(
+    text=alt.Text('Valor:Q', format=',.2f')  # Formatar os valores com duas casas decimais
+)
+
+# Combinar o gráfico de barras com os rótulos
+grafico_completo = grafico_barras + rotulos
+
+# Exibir o gráfico no Streamlit
+st.altair_chart(grafico_completo, use_container_width=True)
+
