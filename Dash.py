@@ -11,21 +11,168 @@ from auth import (verificar_autenticacao, exibir_header_usuario,
 from datetime import datetime
 
 def executar_extracao():
-    """Executa o script de extração e retorna o status"""
+    """Executa a extração diretamente no código Python"""
     try:
-        # Tentar usar o script otimizado primeiro, senão usar o original
-        script_extracao = "Extração_GitHub.py" if os.path.exists("Extração_GitHub.py") else "Extração.py"
+        # Importar e executar a função de extração diretamente
+        from Extração_GitHub import main as extrair_dados
         
-        # Executar o script de extração
-        result = subprocess.run([sys.executable, script_extracao], 
-                              capture_output=True, text=True, cwd=os.getcwd())
+        # Executar a extração
+        extrair_dados()
         
-        if result.returncode == 0:
-            return True, f"Extração executada com sucesso usando {script_extracao}!"
-        else:
-            return False, f"Erro na extração: {result.stderr}"
+        return True, "Extração executada com sucesso!"
+        
+    except ImportError:
+        # Se o script otimizado não existir, usar o original
+        try:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("extracao", "Extração.py")
+            extracao_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(extracao_module)
+            
+            # Executar as funções principais do script original
+            total_registros = executar_extracao_original()
+            
+            return True, f"Extração executada com sucesso! {total_registros} registros processados."
+            
+        except Exception as e:
+            return False, f"Erro ao executar extração: {str(e)}"
     except Exception as e:
         return False, f"Erro ao executar extração: {str(e)}"
+
+def executar_extracao_original():
+    """Executa a extração usando o código do script original"""
+    import pandas as pd
+    
+    # Caminhos das pastas (ajustar conforme necessário)
+    pasta_ke5z = r"C:\Users\u235107\Stellantis\GEIB - GEIB\Partagei_2025\1 - SÍNTESE\11 - SAPIENS\02 - Extrações\KE5Z"
+    pasta_ksbb = r"C:\Users\u235107\Stellantis\GEIB - GEIB\Partagei_2025\1 - SÍNTESE\11 - SAPIENS\02 - Extrações\KSBB"
+    arquivo_sapiens = r'Dados SAPIENS.xlsx'
+    
+    # Verificar se as pastas existem
+    if not os.path.exists(pasta_ke5z):
+        raise FileNotFoundError(f"Pasta KE5Z não encontrada: {pasta_ke5z}")
+    
+    # Lista para armazenar os DataFrames
+    dataframes = []
+    
+    # Iterar sobre todos os arquivos na pasta KE5Z
+    arquivos_ke5z = [f for f in os.listdir(pasta_ke5z) if f.endswith('.txt')]
+    
+    if not arquivos_ke5z:
+        raise FileNotFoundError(f"Nenhum arquivo .txt encontrado na pasta: {pasta_ke5z}")
+    
+    for arquivo in arquivos_ke5z:
+        caminho_arquivo = os.path.join(pasta_ke5z, arquivo)
+        
+        try:
+            # Ler o arquivo em um DataFrame
+            df = pd.read_csv(caminho_arquivo, sep='\t', skiprows=9, encoding='latin1', engine='python')
+            
+            # mudar o nome da coluna Doc.ref. pelo seu índice
+            if len(df.columns) > 9:
+                df.rename(columns={df.columns[9]: 'doc.ref'}, inplace=True)
+            
+            # Remover espaços em branco dos nomes das colunas
+            df.columns = df.columns.str.strip()
+            
+            # Filtrar a coluna 'Ano' com valores não nulos e diferentes de 0
+            if 'Ano' in df.columns:
+                df = df[df['Ano'].notna() & (df['Ano'] != 0)]
+            
+            # Processar colunas numéricas
+            for col in ['Em MCont.', 'Qtd.']:
+                if col in df.columns:
+                    df[col] = df[col].astype(str).str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
+                    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+            
+            # Adicionar o DataFrame à lista
+            dataframes.append(df)
+            
+        except Exception as e:
+            st.warning(f"Erro ao processar arquivo {arquivo}: {str(e)}")
+            continue
+    
+    if not dataframes:
+        raise Exception("Nenhum arquivo foi processado com sucesso!")
+    
+    # Concatenar todos os DataFrames em um único
+    df_total = pd.concat(dataframes, ignore_index=True)
+    
+    # Remover colunas desnecessárias
+    colunas_para_remover = ['Unnamed: 0', 'Unnamed: 1', 'Unnamed: 4', 'Nº doc.', 
+                           'Elem.PEP', 'Obj.custo', 'TD', 'SocPar', 'EmpEm.', 'Empr', 'TMv', 'D/C', 'Imobil.']
+    df_total.drop(columns=colunas_para_remover, inplace=True, errors='ignore')
+    
+    # mudar tipo da coluna 'Cliente' para string
+    if 'Cliente' in df_total.columns:
+        df_total['Cliente'] = df_total['Cliente'].astype(str)
+    
+    # Modificar o nome da coluna 'Em MCont.' para 'Valor'
+    if 'Em MCont.' in df_total.columns:
+        df_total.rename(columns={'Em MCont.': 'Valor'}, inplace=True)
+    
+    # filtrar a coluna Nº conta não vazias e diferentes de 0
+    if 'Nº conta' in df_total.columns:
+        df_total = df_total[df_total['Nº conta'].notna() & (df_total['Nº conta'] != 0)]
+    
+    # Processar arquivos KSBB (se a pasta existir)
+    if os.path.exists(pasta_ksbb):
+        dataframes_ksbb = []
+        arquivos_ksbb = [f for f in os.listdir(pasta_ksbb) if f.endswith('.txt')]
+        
+        for arquivo in arquivos_ksbb:
+            caminho_arquivo = os.path.join(pasta_ksbb, arquivo)
+            
+            try:
+                df_ksbb = pd.read_csv(caminho_arquivo, sep='\t', encoding='latin1', engine='python', skiprows=3, skipfooter=1)
+                df_ksbb.columns = df_ksbb.columns.str.strip()
+                
+                if 'Material' in df_ksbb.columns:
+                    df_ksbb = df_ksbb[df_ksbb['Material'].notna() & (df_ksbb['Material'] != 0)]
+                    df_ksbb = df_ksbb.drop_duplicates(subset=['Material'])
+                    dataframes_ksbb.append(df_ksbb)
+                    
+            except Exception as e:
+                st.warning(f"Erro ao processar arquivo KSBB {arquivo}: {str(e)}")
+                continue
+        
+        # Concatenar DataFrames KSBB
+        if dataframes_ksbb:
+            df_ksbb = pd.concat(dataframes_ksbb, ignore_index=True) if len(dataframes_ksbb) > 1 else dataframes_ksbb[0]
+            df_ksbb = df_ksbb.drop_duplicates(subset=['Material'])
+            
+            # Merge com dados principais
+            if 'Material' in df_total.columns and 'Material' in df_ksbb.columns:
+                df_total = pd.merge(df_total, df_ksbb[['Material', 'Texto breve material']], on='Material', how='left')
+                df_total.rename(columns={'Texto breve material': 'Descrição Material'}, inplace=True)
+                df_total['Texto'] = df_total.apply(lambda row: row['Descrição Material'] if pd.notnull(row['Descrição Material']) else row['Texto'], axis=1)
+    
+    # Processar dados SAPIENS (se o arquivo existir)
+    if os.path.exists(arquivo_sapiens):
+        try:
+            df_sapiens = pd.read_excel(arquivo_sapiens, sheet_name='Conta contabil')
+            df_sapiens.rename(columns={'CONTA SAPIENS': 'Nº conta'}, inplace=True)
+            df_total = pd.merge(df_total, df_sapiens[['Nº conta', 'Type 07', 'Type 06', 'Type 05']], on='Nº conta', how='left')
+            
+            df_CC = pd.read_excel(arquivo_sapiens, sheet_name='CC')
+            df_CC.rename(columns={'CC SAPiens': 'Centro cst'}, inplace=True)
+            df_total = pd.merge(df_total, df_CC[['Centro cst', 'Oficina', 'USI']], on='Centro cst', how='left')
+            df_total['USI'] = df_total['USI'].fillna('Others')
+            
+        except Exception as e:
+            st.warning(f"Erro ao processar arquivo SAPIENS: {str(e)}")
+    
+    # Salvar arquivos
+    pasta_parquet = r"KE5Z"
+    os.makedirs(pasta_parquet, exist_ok=True)
+    
+    caminho_saida_atualizado = os.path.join(pasta_parquet, 'KE5Z.parquet')
+    df_total.to_parquet(caminho_saida_atualizado, index=False)
+    
+    caminho_saida_excel = os.path.join(pasta_parquet, 'KE5Z.xlsx')
+    df_total.head(10000).to_excel(caminho_saida_excel, index=False)
+    
+    return len(df_total)
 
 # Configuração da página
 st.set_page_config(
@@ -146,14 +293,48 @@ if eh_administrador():
     st.sidebar.subheader("🔄 Atualizar Dados")
     
     if st.sidebar.button("📊 Executar Extração", use_container_width=True, type="primary"):
-        with st.spinner("Executando extração de dados..."):
+        # Criar barra de progresso
+        progress_bar = st.sidebar.progress(0)
+        status_text = st.sidebar.empty()
+        
+        try:
+            status_text.text("🔄 Iniciando extração...")
+            progress_bar.progress(10)
+            
+            status_text.text("📁 Lendo arquivos KE5Z...")
+            progress_bar.progress(30)
+            
+            status_text.text("📁 Lendo arquivos KSBB...")
+            progress_bar.progress(50)
+            
+            status_text.text("🔗 Processando dados SAPIENS...")
+            progress_bar.progress(70)
+            
+            status_text.text("💾 Salvando arquivos...")
+            progress_bar.progress(90)
+            
             sucesso, mensagem = executar_extracao()
             
+            progress_bar.progress(100)
+            
             if sucesso:
+                status_text.text("✅ Extração concluída!")
                 st.sidebar.success(mensagem)
                 st.sidebar.info("🔄 Recarregue a página para ver os dados atualizados.")
             else:
+                status_text.text("❌ Erro na extração!")
                 st.sidebar.error(mensagem)
+                
+        except Exception as e:
+            progress_bar.progress(0)
+            status_text.text("❌ Erro inesperado!")
+            st.sidebar.error(f"Erro inesperado: {str(e)}")
+        
+        # Limpar barra de progresso após 3 segundos
+        import time
+        time.sleep(3)
+        progress_bar.empty()
+        status_text.empty()
         
         # Gerenciar usuários pendentes
         st.markdown("**Usuários pendentes de aprovação:**")
