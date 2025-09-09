@@ -122,6 +122,79 @@ if eh_administrador():
         "ℹ️ **Nota:** No Streamlit Cloud, as mudanças de usuários são "
         "temporárias e serão perdidas ao recarregar a página."
     )
+    
+    # Status de salvamento
+    try:
+        # Tentar salvar para verificar se funciona
+        salvar_usuarios(usuarios)
+        st.sidebar.success("💾 Salvamento permanente: ✅ Funcionando")
+    except Exception as e:
+        st.sidebar.warning("💾 Salvamento permanente: ❌ Não disponível")
+        st.sidebar.caption(f"Erro: {str(e)[:50]}...")
+    
+    # Status atual dos usuários
+    total_usuarios = len(usuarios)
+    usuarios_aprovados = len([u for u in usuarios.values() if u.get('status') == 'aprovado'])
+    usuarios_pendentes = len([u for u in usuarios.values() if u.get('status') == 'pendente'])
+    
+    st.sidebar.metric("👥 Total", total_usuarios)
+    st.sidebar.metric("✅ Aprovados", usuarios_aprovados)
+    st.sidebar.metric("⏳ Pendentes", usuarios_pendentes)
+    
+    # Botões para exportar/importar dados
+    col1, col2 = st.sidebar.columns(2)
+    
+    with col1:
+        if st.button("📤 Exportar", help="Exportar dados dos usuários"):
+            import json
+            usuarios_json = json.dumps(usuarios, indent=2, ensure_ascii=False)
+            st.download_button(
+                label="Baixar usuarios.json",
+                data=usuarios_json,
+                file_name="usuarios.json",
+                mime="application/json"
+            )
+    
+    with col2:
+        uploaded_file = st.file_uploader(
+            "📥 Importar", 
+            type=['json'],
+            help="Importar dados dos usuários",
+            key="import_usuarios"
+        )
+        
+        if uploaded_file is not None:
+            try:
+                import json
+                usuarios_importados = json.load(uploaded_file)
+                st.session_state.usuarios = usuarios_importados
+                st.success("✅ Dados importados com sucesso!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Erro ao importar: {str(e)}")
+    
+    # Backup automático
+    if st.sidebar.button("🔄 Backup Automático", help="Criar backup dos dados atuais"):
+        import json
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_data = json.dumps(usuarios, indent=2, ensure_ascii=False)
+        st.download_button(
+            label=f"Baixar backup_{timestamp}.json",
+            data=backup_data,
+            file_name=f"backup_usuarios_{timestamp}.json",
+            mime="application/json"
+        )
+    
+    # Histórico de mudanças
+    if 'historico_mudancas' not in st.session_state:
+        st.session_state.historico_mudancas = []
+    
+    with st.sidebar.expander("📋 Histórico de Mudanças"):
+        if st.session_state.historico_mudancas:
+            for i, mudanca in enumerate(reversed(st.session_state.historico_mudancas[-10:])):
+                st.write(f"**{mudanca['timestamp']}:** {mudanca['acao']}")
+        else:
+            st.write("Nenhuma mudança registrada ainda.")
 
     with st.sidebar.expander("Gerenciar Usuários"):
         st.write("**Adicionar novo usuário:**")
@@ -146,9 +219,16 @@ if eh_administrador():
                             # Atualizar session_state
                             st.session_state.usuarios = usuarios
                             
+                            # Registrar mudança no histórico
+                            st.session_state.historico_mudancas.append({
+                                'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                                'acao': f"Usuário '{novo_usuario}' cadastrado"
+                            })
+                            
                             # Tentar salvar no arquivo (pode falhar no Streamlit Cloud)
                             try:
                                 salvar_usuarios(usuarios)
+                                st.info("💾 Dados salvos permanentemente no arquivo local")
                             except Exception as save_error:
                                 st.warning(
                                     f"⚠️ Usuário cadastrado na sessão atual, mas "
@@ -208,6 +288,12 @@ if eh_administrador():
                         usuarios[usuario]['aprovado_em'] = datetime.now().isoformat()
                         st.session_state.usuarios = usuarios
                         
+                        # Registrar mudança no histórico
+                        st.session_state.historico_mudancas.append({
+                            'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                            'acao': f"Usuário '{usuario}' aprovado"
+                        })
+                        
                         try:
                             salvar_usuarios(usuarios)
                         except Exception as save_error:
@@ -225,6 +311,12 @@ if eh_administrador():
                                 help="Rejeitar usuário"):
                         del usuarios[usuario]
                         st.session_state.usuarios = usuarios
+                        
+                        # Registrar mudança no histórico
+                        st.session_state.historico_mudancas.append({
+                            'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                            'acao': f"Usuário '{usuario}' rejeitado/removido"
+                        })
                         
                         try:
                             salvar_usuarios(usuarios)
@@ -266,6 +358,12 @@ if eh_administrador():
                                 help="Excluir usuário"):
                         del usuarios[usuario]
                         st.session_state.usuarios = usuarios
+                        
+                        # Registrar mudança no histórico
+                        st.session_state.historico_mudancas.append({
+                            'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                            'acao': f"Usuário '{usuario}' excluído"
+                        })
                         
                         try:
                             salvar_usuarios(usuarios)
