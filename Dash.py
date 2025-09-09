@@ -122,14 +122,75 @@ if eh_administrador():
                     st.error("❌ Preencha todos os campos e confirme a senha "
                              "corretamente!")
         
-        # Listar usuários existentes
-        st.write("**Usuários cadastrados:**")
+        # Gerenciar usuários pendentes
+        st.markdown("**Usuários pendentes de aprovação:**")
         usuarios = carregar_usuarios()
-        for usuario in usuarios.keys():
-            if usuario == 'admin':
-                st.write(f"👑 {usuario} (Administrador)")
-            else:
-                st.write(f"👤 {usuario}")
+        usuarios_pendentes = {k: v for k, v in usuarios.items() if v.get('status') == 'pendente'}
+        
+        if usuarios_pendentes:
+            for usuario, dados in usuarios_pendentes.items():
+                with st.container():
+                    col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+                    
+                    with col1:
+                        st.markdown(f"👤 **{usuario}**")
+                        if dados.get('email'):
+                            st.markdown(f"<small>📧 {dados['email']}</small>", unsafe_allow_html=True)
+                        st.markdown(f"<small>⏳ 📅 {dados.get('data_criacao', 'N/A')[:10]}</small>", unsafe_allow_html=True)
+                    
+                    with col2:
+                        if st.button("✅", key=f"aprovar_{usuario}", use_container_width=True, help="Aprovar usuário"):
+                            usuarios[usuario]['status'] = 'aprovado'
+                            usuarios[usuario]['aprovado_em'] = datetime.now().isoformat()
+                            salvar_usuarios(usuarios)
+                            st.success(f"✅ Usuário '{usuario}' aprovado!")
+                            st.rerun()
+                    
+                    with col3:
+                        if st.button("❌", key=f"rejeitar_{usuario}", use_container_width=True, help="Rejeitar usuário"):
+                            del usuarios[usuario]
+                            salvar_usuarios(usuarios)
+                            st.success(f"❌ Usuário '{usuario}' removido!")
+                            st.rerun()
+                    
+                    with col4:
+                        if st.button("👁️", key=f"ver_{usuario}", use_container_width=True, help="Ver detalhes"):
+                            st.write(f"**Detalhes do usuário {usuario}:**")
+                            st.json(dados)
+                    
+                    st.markdown("---")
+        else:
+            st.info("✅ Nenhum usuário pendente de aprovação.")
+        
+        # Listar todos os usuários
+        st.markdown("**Todos os usuários cadastrados:**")
+        for usuario, dados in usuarios.items():
+            with st.container():
+                col1, col2, col3 = st.columns([4, 1, 1])
+                
+                with col1:
+                    if usuario == 'admin':
+                        st.markdown("👑 **admin** (Administrador)")
+                    else:
+                        status_icon = "✅" if dados.get('status') == 'aprovado' else "⏳"
+                        status_text = "Aprovado" if dados.get('status') == 'aprovado' else "Pendente"
+                        st.markdown(f"{status_icon} **{usuario}** - {status_text}")
+                        if dados.get('email'):
+                            st.markdown(f"<small>📧 {dados['email']}</small>", unsafe_allow_html=True)
+                        st.markdown(f"<small>📅 {dados.get('data_criacao', 'N/A')[:10]}</small>", unsafe_allow_html=True)
+                
+                with col2:
+                    if usuario != 'admin':
+                        if st.button("🗑️", key=f"excluir_{usuario}", use_container_width=True, help="Excluir usuário"):
+                            del usuarios[usuario]
+                            salvar_usuarios(usuarios)
+                            st.success(f"✅ Usuário '{usuario}' excluído!")
+                            st.rerun()
+                
+                with col3:
+                    if st.button("👁️", key=f"ver_detalhes_{usuario}", use_container_width=True, help="Ver detalhes"):
+                        st.write(f"**Detalhes do usuário {usuario}:**")
+                        st.json(dados)
 else:
     st.sidebar.markdown("---")
     st.sidebar.info("🔒 Apenas o administrador pode gerenciar usuários.")

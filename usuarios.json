@@ -5,15 +5,10 @@
     "status": "aprovado"
   },
   "hudson": {
-    "senha": "6b80784247859d797aa51a2a997f55c8458f2278af99dbaad103f8da2dc992e4",
-    "data_criacao": "2025-09-08T12:55:24.004443",
+    "senha": "e16a18745aee69722fa300e53ae9fe5dce857797465ac2788f733b08659750c7",
+    "email": "",
+    "data_criacao": "2025-09-08T21:54:07.496772",
     "status": "aprovado",
-    "alterado_por_admin": "2025-09-08T21:12:09.558055"
-  },
-  "usuario_teste": {
-    "senha": "55a5e9e78207b4df8699d60886fa070079463547b095d1a05bc719bb4e6cd251",
-    "data_criacao": "2025-09-08T20:19:59.433549",
-    "status": "pendente",
-    "email": "teste@exemplo.com"
+    "aprovado_em": "2025-09-08T22:03:52.672683"
   }
 }
