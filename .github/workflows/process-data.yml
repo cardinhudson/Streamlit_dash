@@ -1,0 +1,43 @@
+name: Processar Dados KE5Z
+
+on:
+  workflow_dispatch:  # Permite execução manual
+  schedule:
+    - cron: '0 2 * * 1'  # Executa toda segunda-feira às 2h
+
+jobs:
+  process-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      
+    - name: Configurar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Instalar dependências
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Baixar arquivos de dados
+      run: |
+        # Aqui você pode baixar seus arquivos CSV de um repositório privado
+        # ou de um serviço de armazenamento como AWS S3, Google Drive, etc.
+        echo "Baixando arquivos de dados..."
+        # Exemplo: wget ou curl para baixar arquivos
+        
+    - name: Executar extração
+      run: |
+        python Extração.py
+        
+    - name: Fazer commit dos dados processados
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add KE5Z/
+        git commit -m "Atualizar dados processados - $(date)" || exit 0
+        git push

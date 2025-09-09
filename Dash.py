@@ -13,12 +13,15 @@ from datetime import datetime
 def executar_extracao():
     """Executa o script de extração e retorna o status"""
     try:
+        # Tentar usar o script otimizado primeiro, senão usar o original
+        script_extracao = "Extração_GitHub.py" if os.path.exists("Extração_GitHub.py") else "Extração.py"
+        
         # Executar o script de extração
-        result = subprocess.run([sys.executable, "Extração.py"], 
+        result = subprocess.run([sys.executable, script_extracao], 
                               capture_output=True, text=True, cwd=os.getcwd())
         
         if result.returncode == 0:
-            return True, "Extração executada com sucesso!"
+            return True, f"Extração executada com sucesso usando {script_extracao}!"
         else:
             return False, f"Erro na extração: {result.stderr}"
     except Exception as e:
