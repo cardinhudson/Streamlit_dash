@@ -5,10 +5,73 @@ import os
 import altair as alt
 import subprocess
 import sys
+import requests
+import base64
+import json
 from auth import (verificar_autenticacao, exibir_header_usuario,
                   eh_administrador, verificar_status_aprovado,
                   carregar_usuarios, salvar_usuarios, criar_hash_senha)
 from datetime import datetime
+
+def salvar_no_github(usuarios_data):
+    """Salva os dados dos usuários no GitHub usando a API"""
+    try:
+        # Configurações do GitHub (você precisa configurar essas variáveis)
+        github_token = st.secrets.get("GITHUB_TOKEN", "")
+        repo_owner = st.secrets.get("GITHUB_REPO_OWNER", "U235107")
+        repo_name = st.secrets.get("GITHUB_REPO_NAME", "Streamlit_dash")
+        
+        if not github_token:
+            return False, "❌ Token do GitHub não configurado"
+        
+        # URL da API do GitHub
+        url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/usuarios.json"
+        
+        # Converter dados para JSON
+        json_data = json.dumps(usuarios_data, indent=2, ensure_ascii=False)
+        
+        # Codificar em base64
+        encoded_data = base64.b64encode(json_data.encode('utf-8')).decode('utf-8')
+        
+        # Headers
+        headers = {
+            "Authorization": f"token {github_token}",
+            "Accept": "application/vnd.github.v3+json"
+        }
+        
+        # Primeiro, obter o SHA do arquivo atual
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code == 200:
+            # Arquivo existe, obter SHA
+            file_data = response.json()
+            sha = file_data['sha']
+        elif response.status_code == 404:
+            # Arquivo não existe, criar novo
+            sha = None
+        else:
+            return False, f"❌ Erro ao acessar repositório: {response.status_code}"
+        
+        # Preparar dados para upload
+        data = {
+            "message": f"Atualização automática de usuários - {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}",
+            "content": encoded_data,
+            "branch": "main"
+        }
+        
+        if sha:
+            data["sha"] = sha
+        
+        # Fazer upload
+        response = requests.put(url, headers=headers, json=data)
+        
+        if response.status_code in [200, 201]:
+            return True, "✅ Dados salvos no GitHub com sucesso!"
+        else:
+            return False, f"❌ Erro ao salvar no GitHub: {response.status_code} - {response.text}"
+            
+    except Exception as e:
+        return False, f"❌ Erro inesperado: {str(e)}"
 
 def executar_extracao():
     """Executa o script de extração e retorna o status"""
@@ -127,10 +190,19 @@ if eh_administrador():
     try:
         # Tentar salvar para verificar se funciona
         salvar_usuarios(usuarios)
-        st.sidebar.success("💾 Salvamento permanente: ✅ Funcionando")
+        st.sidebar.success("💾 Salvamento local: ✅ Funcionando")
     except Exception as e:
-        st.sidebar.warning("💾 Salvamento permanente: ❌ Não disponível")
+        st.sidebar.warning("💾 Salvamento local: ❌ Não disponível")
         st.sidebar.caption(f"Erro: {str(e)[:50]}...")
+    
+    # Testar conexão com GitHub
+    if st.sidebar.button("🔗 Testar GitHub", help="Testar conexão com GitHub"):
+        with st.spinner("Testando conexão com GitHub..."):
+            sucesso, mensagem = salvar_no_github(usuarios)
+            if sucesso:
+                st.sidebar.success("🚀 GitHub: ✅ Conectado!")
+            else:
+                st.sidebar.error(f"🚀 GitHub: ❌ {mensagem}")
     
     # Status atual dos usuários
     total_usuarios = len(usuarios)
@@ -146,7 +218,6 @@ if eh_administrador():
     
     with col1:
         if st.button("📤 Exportar", help="Exportar dados dos usuários"):
-            import json
             usuarios_json = json.dumps(usuarios, indent=2, ensure_ascii=False)
             st.download_button(
                 label="Baixar usuarios.json",
@@ -165,7 +236,6 @@ if eh_administrador():
         
         if uploaded_file is not None:
             try:
-                import json
                 usuarios_importados = json.load(uploaded_file)
                 st.session_state.usuarios = usuarios_importados
                 st.success("✅ Dados importados com sucesso!")
@@ -175,7 +245,6 @@ if eh_administrador():
     
     # Backup automático
     if st.sidebar.button("🔄 Backup Automático", help="Criar backup dos dados atuais"):
-        import json
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_data = json.dumps(usuarios, indent=2, ensure_ascii=False)
         st.download_button(
@@ -225,16 +294,22 @@ if eh_administrador():
                                 'acao': f"Usuário '{novo_usuario}' cadastrado"
                             })
                             
-                            # Tentar salvar no arquivo (pode falhar no Streamlit Cloud)
+                            # Tentar salvar no arquivo local
                             try:
                                 salvar_usuarios(usuarios)
-                                st.info("💾 Dados salvos permanentemente no arquivo local")
+                                st.info("💾 Dados salvos no arquivo local")
                             except Exception as save_error:
-                                st.warning(
-                                    f"⚠️ Usuário cadastrado na sessão atual, mas "
-                                    f"não foi salvo permanentemente: "
-                                    f"{str(save_error)}"
-                                )
+                                st.warning(f"⚠️ Erro ao salvar localmente: {str(save_error)}")
+                            
+                            # Tentar salvar no GitHub
+                            try:
+                                sucesso_github, mensagem_github = salvar_no_github(usuarios)
+                                if sucesso_github:
+                                    st.success("🚀 Dados salvos no GitHub!")
+                                else:
+                                    st.warning(f"⚠️ Erro ao salvar no GitHub: {mensagem_github}")
+                            except Exception as github_error:
+                                st.warning(f"⚠️ Erro ao conectar com GitHub: {str(github_error)}")
                             
                             st.success(f"✅ Usuário '{novo_usuario}' cadastrado com "
                                        f"sucesso!")
@@ -294,14 +369,21 @@ if eh_administrador():
                             'acao': f"Usuário '{usuario}' aprovado"
                         })
                         
+                        # Tentar salvar localmente
                         try:
                             salvar_usuarios(usuarios)
                         except Exception as save_error:
-                            st.warning(
-                                f"⚠️ Usuário aprovado na sessão atual, mas "
-                                f"mudanças não foram salvas permanentemente: "
-                                f"{str(save_error)}"
-                            )
+                            st.warning(f"⚠️ Erro ao salvar localmente: {str(save_error)}")
+                        
+                        # Tentar salvar no GitHub
+                        try:
+                            sucesso_github, mensagem_github = salvar_no_github(usuarios)
+                            if sucesso_github:
+                                st.success("🚀 Dados salvos no GitHub!")
+                            else:
+                                st.warning(f"⚠️ Erro ao salvar no GitHub: {mensagem_github}")
+                        except Exception as github_error:
+                            st.warning(f"⚠️ Erro ao conectar com GitHub: {str(github_error)}")
                         
                         st.success(f"✅ Usuário '{usuario}' aprovado!")
                         st.rerun()
@@ -318,14 +400,21 @@ if eh_administrador():
                             'acao': f"Usuário '{usuario}' rejeitado/removido"
                         })
                         
+                        # Tentar salvar localmente
                         try:
                             salvar_usuarios(usuarios)
                         except Exception as save_error:
-                            st.warning(
-                                f"⚠️ Usuário removido da sessão atual, mas "
-                                f"mudanças não foram salvas permanentemente: "
-                                f"{str(save_error)}"
-                            )
+                            st.warning(f"⚠️ Erro ao salvar localmente: {str(save_error)}")
+                        
+                        # Tentar salvar no GitHub
+                        try:
+                            sucesso_github, mensagem_github = salvar_no_github(usuarios)
+                            if sucesso_github:
+                                st.success("🚀 Dados salvos no GitHub!")
+                            else:
+                                st.warning(f"⚠️ Erro ao salvar no GitHub: {mensagem_github}")
+                        except Exception as github_error:
+                            st.warning(f"⚠️ Erro ao conectar com GitHub: {str(github_error)}")
                         
                         st.success(f"❌ Usuário '{usuario}' removido!")
                         st.rerun()
@@ -365,14 +454,21 @@ if eh_administrador():
                             'acao': f"Usuário '{usuario}' excluído"
                         })
                         
+                        # Tentar salvar localmente
                         try:
                             salvar_usuarios(usuarios)
                         except Exception as save_error:
-                            st.warning(
-                                f"⚠️ Usuário excluído da sessão atual, mas "
-                                f"mudanças não foram salvas permanentemente: "
-                                f"{str(save_error)}"
-                            )
+                            st.warning(f"⚠️ Erro ao salvar localmente: {str(save_error)}")
+                        
+                        # Tentar salvar no GitHub
+                        try:
+                            sucesso_github, mensagem_github = salvar_no_github(usuarios)
+                            if sucesso_github:
+                                st.success("🚀 Dados salvos no GitHub!")
+                            else:
+                                st.warning(f"⚠️ Erro ao salvar no GitHub: {mensagem_github}")
+                        except Exception as github_error:
+                            st.warning(f"⚠️ Erro ao conectar com GitHub: {str(github_error)}")
                         
                         st.success(f"✅ Usuário '{usuario}' excluído!")
                         st.rerun()
