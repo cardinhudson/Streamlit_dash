@@ -5,9 +5,10 @@
     "status": "aprovado"
   },
   "hudson": {
-    "senha": "3ffc253b7dc1b20c34cd84f46fa7aa022699c1bf39be432437c238e9ac5851cc",
+    "senha": "6b80784247859d797aa51a2a997f55c8458f2278af99dbaad103f8da2dc992e4",
     "data_criacao": "2025-09-08T12:55:24.004443",
-    "status": "aprovado"
+    "status": "aprovado",
+    "alterado_por_admin": "2025-09-08T21:12:09.558055"
   },
   "usuario_teste": {
     "senha": "55a5e9e78207b4df8699d60886fa070079463547b095d1a05bc719bb4e6cd251",

@@ -14,7 +14,7 @@ st.set_page_config(
 verificar_autenticacao()
 
 # Verificar se o usuário está aprovado
-if not verificar_status_aprovado(st.session_state.usuario_nome):
+if 'usuario_nome' in st.session_state and not verificar_status_aprovado(st.session_state.usuario_nome):
     st.warning("⏳ Sua conta ainda está pendente de aprovação. Aguarde o administrador aprovar seu acesso.")
     st.info("📧 Você receberá uma notificação quando sua conta for aprovada.")
     st.stop()

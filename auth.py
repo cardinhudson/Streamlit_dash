@@ -1,117 +1,122 @@
+#!/usr/bin/env python3
 """
-Módulo de autenticação compartilhado para todas as páginas do Streamlit
+Módulo de autenticação para o sistema de login
 """
 import streamlit as st
-import hashlib
 import json
+import hashlib
 from datetime import datetime
 
-# Função para carregar usuários do arquivo JSON
-
+def criar_hash_senha(senha):
+    """Cria um hash SHA-256 da senha"""
+    return hashlib.sha256(senha.encode()).hexdigest()
 
 def carregar_usuarios():
+    """Carrega os usuários do arquivo JSON"""
     try:
         with open('usuarios.json', 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
         return {}
 
-# Função para salvar usuários no arquivo JSON
 def salvar_usuarios(usuarios):
+    """Salva os usuários no arquivo JSON"""
     with open('usuarios.json', 'w', encoding='utf-8') as f:
-        json.dump(usuarios, f, ensure_ascii=False, indent=2)
+        json.dump(usuarios, f, indent=2, ensure_ascii=False)
 
-# Função para criar hash da senha
-def criar_hash_senha(senha):
-    return hashlib.sha256(senha.encode()).hexdigest()
-
-# Função para verificar credenciais
-def verificar_login(username, senha):
+def criar_admin_inicial():
+    """Cria o usuário admin inicial se não existir"""
     usuarios = carregar_usuarios()
-    if username in usuarios:
+    
+    if 'admin' not in usuarios:
+        usuarios['admin'] = {
+            'senha': criar_hash_senha('admin123'),
+            'data_criacao': datetime.now().isoformat(),
+            'status': 'aprovado',
+            'aprovado_em': datetime.now().isoformat()
+        }
+        salvar_usuarios(usuarios)
+
+def verificar_login(usuario, senha):
+    """Verifica se o login é válido"""
+    usuarios = carregar_usuarios()
+    
+    if usuario in usuarios:
         senha_hash = criar_hash_senha(senha)
-        return senha_hash == usuarios[username]['senha']
-    return False
+        if usuarios[usuario]['senha'] == senha_hash:
+            # Verificar se o usuário está aprovado
+            if usuarios[usuario].get('status') == 'aprovado':
+                return True
+            else:
+                st.error("⏳ Sua conta ainda está pendente de aprovação.")
+                return False
+        else:
+            st.error("❌ Senha incorreta!")
+            return False
+    else:
+        st.error("❌ Usuário não encontrado!")
+        return False
 
-# Função para verificar se o usuário está aprovado
-def verificar_status_aprovado(username):
-    usuarios = carregar_usuarios()
-    if username in usuarios:
-        return usuarios[username].get('status', 'pendente') == 'aprovado'
-    return False
-
-# Função para verificar se o usuário está logado
-def verificar_sessao():
-    if 'usuario_logado' not in st.session_state:
-        st.session_state.usuario_logado = False
-    if 'usuario_nome' not in st.session_state:
-        st.session_state.usuario_nome = None
-    return st.session_state.usuario_logado
-
-# Função para fazer logout
 def fazer_logout():
-    st.session_state.usuario_logado = False
-    st.session_state.usuario_nome = None
+    """Faz logout do usuário"""
+    if 'usuario_nome' in st.session_state:
+        del st.session_state['usuario_nome']
     st.rerun()
 
-# Função para tela de login
-def tela_login():
-    st.title("🔐 Login - Dashboard KE5Z")
-    st.markdown("---")
-    
-    with st.form("login_form"):
-        st.subheader("Acesso ao Sistema")
-        username = st.text_input("👤 Usuário:", placeholder="Digite seu usuário")
-        senha = st.text_input("🔑 Senha:", type="password", placeholder="Digite sua senha")
-        
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col2:
-            submitted = st.form_submit_button("Entrar", use_container_width=True)
-        
-        if submitted:
-            if verificar_login(username, senha):
-                # Verificar se o usuário está aprovado
-                if verificar_status_aprovado(username):
-                    st.session_state.usuario_logado = True
-                    st.session_state.usuario_nome = username
-                    st.success(f"Bem-vindo, {username}!")
-                    st.rerun()
-                else:
-                    st.warning("⏳ Sua conta ainda está pendente de aprovação. Aguarde o administrador aprovar seu acesso.")
-            else:
-                st.error("❌ Usuário ou senha incorretos!")
-    
-    # Seção para cadastro de novos usuários
-    st.markdown("---")
-    st.subheader("📝 Cadastro de Usuário")
-    
-    with st.expander("Criar Nova Conta"):
-        with st.form("cadastro_form"):
-            st.write("**Criar nova conta:**")
-            novo_usuario = st.text_input("Usuário:", key="cadastro_usuario")
-            nova_senha = st.text_input("Senha:", type="password", key="cadastro_senha")
-            confirmar_senha = st.text_input("Confirmar Senha:", type="password", key="cadastro_confirmar")
-            email = st.text_input("Email (opcional):", key="cadastro_email")
-            
-            if st.form_submit_button("Criar Conta", use_container_width=True):
-                if nova_senha == confirmar_senha and novo_usuario and nova_senha:
-                    usuarios = carregar_usuarios()
-                    if novo_usuario not in usuarios:
-                        usuarios[novo_usuario] = {
-                            'senha': criar_hash_senha(nova_senha),
-                            'data_criacao': datetime.now().isoformat(),
-                            'status': 'pendente',  # Status pendente até aprovação do admin
-                            'email': email if email else None
-                        }
-                        salvar_usuarios(usuarios)
-                        st.success(f"✅ Conta '{novo_usuario}' criada com sucesso! Aguarde a aprovação do administrador.")
-                        st.info("📧 Você receberá uma notificação quando sua conta for aprovada.")
-                    else:
-                        st.error("❌ Usuário já existe!")
-                else:
-                    st.error("❌ Preencha todos os campos obrigatórios e confirme a senha corretamente!")
+def verificar_autenticacao():
+    """Verifica se o usuário está autenticado"""
+    if 'usuario_nome' not in st.session_state:
+        tela_login()
+        st.stop()
 
-    # Seção para administrador gerenciar usuários (apenas para admin)
+def verificar_status_aprovado(username):
+    """Verifica se o usuário está aprovado"""
+    usuarios = carregar_usuarios()
+    if username in usuarios:
+        return usuarios[username].get('status') == 'aprovado'
+    return False
+
+def eh_administrador():
+    """Verifica se o usuário atual é administrador"""
+    return st.session_state.get('usuario_nome') == 'admin'
+
+def exibir_header_usuario():
+    """Exibe o header com informações do usuário"""
+    if 'usuario_nome' in st.session_state:
+        st.sidebar.markdown("---")
+        st.sidebar.write(f"👤 **Usuário:** {st.session_state['usuario_nome']}")
+        
+        if eh_administrador():
+            st.sidebar.write("👑 **Administrador**")
+        
+        if st.sidebar.button("🚪 Logout"):
+            fazer_logout()
+
+def tela_login():
+    """Exibe a tela de login"""
+    st.title("🔐 Sistema de Login")
+    
+    # Criar admin inicial se necessário
+    criar_admin_inicial()
+    
+    # Formulário de login
+    with st.form("login_form"):
+        st.subheader("📝 Fazer Login")
+        usuario = st.text_input("Usuário:")
+        senha = st.text_input("Senha:", type="password")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.form_submit_button("🔓 Entrar", use_container_width=True):
+                if verificar_login(usuario, senha):
+                    st.session_state.usuario_nome = usuario
+                    st.success(f"✅ Login realizado com sucesso! Bem-vindo, {usuario}!")
+                    st.rerun()
+        
+        with col2:
+            if st.form_submit_button("🔄 Limpar", use_container_width=True):
+                st.rerun()
+    
     st.markdown("---")
     st.subheader("👨‍💼 Área Administrativa")
     
@@ -180,17 +185,64 @@ def tela_login():
                     
                     with col2:
                         if usuario != 'admin':  # Admin não pode ser excluído
-                            if st.button(f"🗑️ Excluir", key=f"excluir_{usuario}", type="secondary"):
-                                # Confirmar exclusão
-                                if st.session_state.get(f"confirmar_exclusao_{usuario}", False):
-                                    # Excluir usuário
-                                    del usuarios[usuario]
-                                    salvar_usuarios(usuarios)
-                                    st.success(f"✅ Usuário '{usuario}' excluído com sucesso!")
-                                    st.rerun()
-                                else:
-                                    st.session_state[f"confirmar_exclusao_{usuario}"] = True
-                                    st.warning(f"⚠️ Clique novamente para confirmar a exclusão de '{usuario}'")
+                            # Verificar se está alterando senha
+                            if st.session_state.get(f"alterando_senha_{usuario}", False):
+                                with st.form(f"form_alterar_senha_{usuario}"):
+                                    st.write(f"**Alterar senha de {usuario}:**")
+                                    nova_senha_admin = st.text_input("Nova Senha:", type="password", key=f"nova_senha_admin_{usuario}")
+                                    confirmar_senha_admin = st.text_input("Confirmar Nova Senha:", type="password", key=f"confirmar_senha_admin_{usuario}")
+                                    
+                                    col_salvar, col_cancelar_senha = st.columns(2)
+                                    with col_salvar:
+                                        if st.form_submit_button("💾 Salvar", use_container_width=True):
+                                            if nova_senha_admin == confirmar_senha_admin and nova_senha_admin:
+                                                # Atualizar senha
+                                                usuarios[usuario]['senha'] = criar_hash_senha(nova_senha_admin)
+                                                usuarios[usuario]['alterado_por_admin_em'] = datetime.now().isoformat()
+                                                salvar_usuarios(usuarios)
+                                                # Limpar estado
+                                                if f"alterando_senha_{usuario}" in st.session_state:
+                                                    del st.session_state[f"alterando_senha_{usuario}"]
+                                                st.success(f"✅ Senha de '{usuario}' alterada com sucesso!")
+                                                st.rerun()
+                                            else:
+                                                st.error("❌ Preencha os campos e confirme a senha corretamente!")
+                                    with col_cancelar_senha:
+                                        if st.form_submit_button("❌ Cancelar", use_container_width=True):
+                                            # Limpar estado
+                                            if f"alterando_senha_{usuario}" in st.session_state:
+                                                del st.session_state[f"alterando_senha_{usuario}"]
+                                            st.rerun()
+                            # Verificar se está confirmando exclusão
+                            elif st.session_state.get(f"confirmar_exclusao_{usuario}", False):
+                                col_confirmar, col_cancelar = st.columns(2)
+                                with col_confirmar:
+                                    if st.button(f"✅ Confirmar", key=f"confirmar_{usuario}", type="primary"):
+                                        # Excluir usuário
+                                        del usuarios[usuario]
+                                        salvar_usuarios(usuarios)
+                                        # Limpar estado de confirmação
+                                        if f"confirmar_exclusao_{usuario}" in st.session_state:
+                                            del st.session_state[f"confirmar_exclusao_{usuario}"]
+                                        st.success(f"✅ Usuário '{usuario}' excluído com sucesso!")
+                                        st.rerun()
+                                with col_cancelar:
+                                    if st.button(f"❌ Cancelar", key=f"cancelar_{usuario}"):
+                                        # Limpar estado de confirmação
+                                        if f"confirmar_exclusao_{usuario}" in st.session_state:
+                                            del st.session_state[f"confirmar_exclusao_{usuario}"]
+                                        st.rerun()
+                                st.warning(f"⚠️ Tem certeza que deseja excluir '{usuario}'?")
+                            else:
+                                col_alterar, col_excluir = st.columns(2)
+                                with col_alterar:
+                                    if st.button(f"🔑 Alterar Senha", key=f"alterar_senha_{usuario}", type="secondary"):
+                                        st.session_state[f"alterando_senha_{usuario}"] = True
+                                        st.rerun()
+                                with col_excluir:
+                                    if st.button(f"🗑️ Excluir", key=f"excluir_{usuario}", type="secondary"):
+                                        st.session_state[f"confirmar_exclusao_{usuario}"] = True
+                                        st.rerun()
                         else:
                             st.write("🔒 Protegido")
                     
@@ -211,111 +263,68 @@ def tela_login():
         st.subheader("🔑 Alterar Minha Senha")
         
         with st.expander("Alterar Senha"):
-            with st.form("alterar_senha_login_form"):
-                st.write("**Alterar senha de usuário:**")
-                usuario_alterar = st.text_input("Usuário:", key="usuario_alterar_senha")
-                senha_atual = st.text_input("Senha Atual:", type="password", key="senha_atual_login")
-                nova_senha = st.text_input("Nova Senha:", type="password", key="nova_senha_login")
-                confirmar_nova_senha = st.text_input("Confirmar Nova Senha:", type="password", key="confirmar_nova_senha_login")
+            with st.form("alterar_senha_form"):
+                st.write("**Alterar senha do usuário:**")
+                usuario_atual = st.text_input("Usuário:", value=st.session_state.get('usuario_nome', ''), disabled=True)
+                senha_atual = st.text_input("Senha Atual:", type="password")
+                nova_senha = st.text_input("Nova Senha:", type="password")
+                confirmar_senha = st.text_input("Confirmar Nova Senha:", type="password")
                 
-                if st.form_submit_button("Alterar Senha", use_container_width=True):
-                    if nova_senha == confirmar_nova_senha and nova_senha and senha_atual and usuario_alterar:
-                        # Verificar se o usuário existe e a senha atual está correta
-                        if verificar_login(usuario_alterar, senha_atual):
-                            # Verificar se o usuário está aprovado
-                            if verificar_status_aprovado(usuario_alterar):
-                                # Atualizar a senha
-                                usuarios = carregar_usuarios()
-                                usuarios[usuario_alterar]['senha'] = criar_hash_senha(nova_senha)
-                                salvar_usuarios(usuarios)
-                                st.success(f"✅ Senha do usuário '{usuario_alterar}' alterada com sucesso!")
-                                st.rerun()
+                col_salvar, col_cancelar = st.columns(2)
+                with col_salvar:
+                    if st.form_submit_button("💾 Salvar", use_container_width=True):
+                        if nova_senha == confirmar_senha and nova_senha and senha_atual:
+                            usuarios = carregar_usuarios()
+                            if usuario_atual in usuarios:
+                                # Verificar senha atual
+                                if usuarios[usuario_atual]['senha'] == criar_hash_senha(senha_atual):
+                                    # Atualizar senha
+                                    usuarios[usuario_atual]['senha'] = criar_hash_senha(nova_senha)
+                                    usuarios[usuario_atual]['alterado_em'] = datetime.now().isoformat()
+                                    salvar_usuarios(usuarios)
+                                    st.success(f"✅ Senha de '{usuario_atual}' alterada com sucesso!")
+                                else:
+                                    st.error("❌ Senha atual incorreta!")
                             else:
-                                st.warning("⏳ Usuário não está aprovado. Aguarde a aprovação do administrador.")
+                                st.error("❌ Usuário não encontrado!")
                         else:
-                            st.error("❌ Usuário ou senha atual incorretos!")
-                    else:
-                        st.error("❌ Preencha todos os campos e confirme a nova senha corretamente!")
-
-# Função para criar usuário administrador inicial
-def criar_admin_inicial():
-    usuarios = carregar_usuarios()
-    if not usuarios:  # Se não há usuários, criar admin padrão
-        usuarios['admin'] = {
-            'senha': criar_hash_senha('admin123'),
-            'data_criacao': datetime.now().isoformat(),
-            'status': 'aprovado'  # Admin sempre aprovado
-        }
-        salvar_usuarios(usuarios)
-        st.info("👤 Usuário administrador criado: **admin** | Senha: **admin123**")
-        st.warning("⚠️ **IMPORTANTE**: Altere a senha padrão após o primeiro login!")
-
-# Função principal de autenticação - deve ser chamada no início de cada página
-def verificar_autenticacao():
-    """
-    Função principal que deve ser chamada no início de cada página.
-    Se o usuário não estiver logado, exibe a tela de login e para a execução.
-    """
-    # Criar usuário admin inicial se necessário
-    criar_admin_inicial()
-    
-    # Verificar se o usuário está logado
-    if not verificar_sessao():
-        tela_login()
-        st.stop()  # Para a execução da página se não estiver logado
-    
-    # Se chegou até aqui, o usuário está logado
-    return True
-
-# Função para verificar se o usuário é administrador
-def eh_administrador():
-    """
-    Verifica se o usuário logado é o administrador.
-    """
-    return st.session_state.get('usuario_nome') == 'admin'
-
-# Função para alterar senha do usuário atual
-def alterar_senha_usuario():
-    """
-    Permite ao usuário logado alterar sua própria senha.
-    """
-    with st.expander("🔑 Alterar Senha"):
-        with st.form("alterar_senha_form"):
-            # Mostrar qual usuário está alterando a senha
-            usuario_atual = st.session_state.usuario_nome
-            st.write(f"**Alterar senha do usuário: {usuario_atual}**")
-            
-            senha_atual = st.text_input("Senha Atual:", type="password", key="senha_atual")
-            nova_senha = st.text_input("Nova Senha:", type="password", key="nova_senha")
-            confirmar_nova_senha = st.text_input("Confirmar Nova Senha:", type="password", key="confirmar_nova_senha")
-            
-            if st.form_submit_button("Alterar Senha", use_container_width=True):
-                if nova_senha == confirmar_nova_senha and nova_senha and senha_atual:
-                    # Verificar se a senha atual está correta
-                    if verificar_login(usuario_atual, senha_atual):
-                        # Atualizar a senha
-                        usuarios = carregar_usuarios()
-                        usuarios[usuario_atual]['senha'] = criar_hash_senha(nova_senha)
-                        salvar_usuarios(usuarios)
-                        st.success(f"✅ Senha do usuário '{usuario_atual}' alterada com sucesso!")
+                            st.error("❌ Preencha todos os campos e confirme a senha corretamente!")
+                
+                with col_cancelar:
+                    if st.form_submit_button("❌ Cancelar", use_container_width=True):
                         st.rerun()
+    
+    # Seção de cadastro de usuário
+    st.markdown("---")
+    st.subheader("📝 Cadastro de Usuário")
+    
+    with st.expander("Cadastrar Novo Usuário"):
+        with st.form("cadastro_form"):
+            st.write("**Criar nova conta:**")
+            novo_usuario = st.text_input("Usuário:")
+            novo_email = st.text_input("Email:")
+            nova_senha = st.text_input("Senha:", type="password")
+            confirmar_nova_senha = st.text_input("Confirmar Senha:", type="password")
+            
+            col_cadastrar, col_limpar = st.columns(2)
+            with col_cadastrar:
+                if st.form_submit_button("📝 Cadastrar", use_container_width=True):
+                    if nova_senha == confirmar_nova_senha and novo_usuario and nova_senha:
+                        usuarios = carregar_usuarios()
+                        if novo_usuario not in usuarios:
+                            usuarios[novo_usuario] = {
+                                'senha': criar_hash_senha(nova_senha),
+                                'email': novo_email,
+                                'data_criacao': datetime.now().isoformat(),
+                                'status': 'pendente'
+                            }
+                            salvar_usuarios(usuarios)
+                            st.success(f"✅ Usuário '{novo_usuario}' cadastrado com sucesso! Aguarde aprovação do administrador.")
+                        else:
+                            st.error("❌ Usuário já existe!")
                     else:
-                        st.error("❌ Senha atual incorreta!")
-                else:
-                    st.error("❌ Preencha todos os campos e confirme a nova senha corretamente!")
-
-# Função para exibir header com informações do usuário
-def exibir_header_usuario():
-    """
-    Exibe o header com informações do usuário e botão de logout.
-    Deve ser chamada após verificar_autenticacao().
-    """
-    col1, col2, col3 = st.columns([2, 1, 1])
-    with col3:
-        usuario_atual = st.session_state.usuario_nome
-        if eh_administrador():
-            st.write(f"👑 Admin: **{usuario_atual}**")
-        else:
-            st.write(f"👤 Usuário: **{usuario_atual}**")
-        if st.button("🚪 Logout", type="secondary"):
-            fazer_logout()
+                        st.error("❌ Preencha todos os campos e confirme a senha corretamente!")
+            
+            with col_limpar:
+                if st.form_submit_button("🔄 Limpar", use_container_width=True):
+                    st.rerun()

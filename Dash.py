@@ -3,7 +3,10 @@ import streamlit as st
 import pandas as pd
 import os
 import altair as alt
-from auth import verificar_autenticacao, exibir_header_usuario, eh_administrador, alterar_senha_usuario, verificar_status_aprovado
+from auth import (verificar_autenticacao, exibir_header_usuario,
+                  eh_administrador, verificar_status_aprovado,
+                  carregar_usuarios, salvar_usuarios, criar_hash_senha)
+from datetime import datetime
 
 # Configuração da página
 st.set_page_config(
@@ -17,9 +20,11 @@ st.set_page_config(
 verificar_autenticacao()
 
 # Verificar se o usuário está aprovado
-if not verificar_status_aprovado(st.session_state.usuario_nome):
-    st.warning("⏳ Sua conta ainda está pendente de aprovação. Aguarde o administrador aprovar seu acesso.")
-    st.info("📧 Você receberá uma notificação quando sua conta for aprovada.")
+if 'usuario_nome' in st.session_state and not verificar_status_aprovado(st.session_state.usuario_nome):
+    st.warning("⏳ Sua conta ainda está pendente de aprovação. "
+               "Aguarde o administrador aprovar seu acesso.")
+    st.info("📧 Você receberá uma notificação quando sua conta for "
+            "aprovada.")
     st.stop()
 
 # Caminho do arquivo parquet
@@ -31,7 +36,7 @@ df_total = pd.read_parquet(arquivo_parquet)
 # Exibir as primeiras linhas do DataFrame para verificar os dados
 print(df_total.head())
 
-# filtrar o df_total com a coluna 'USI" que não seja 'Others' e que não seja nula
+# Filtrar o df_total com a coluna 'USI' que não seja 'Others' e que não seja nula
 df_total = df_total[df_total['USI'].notna() & (df_total['USI'] != 'Others')]
 
 # Header com informações do usuário e botão de logout
@@ -88,19 +93,18 @@ st.sidebar.write(f"Soma do Valor total: R$ {df_filtrado['Valor'].sum():,.2f}")
 if eh_administrador():
     st.sidebar.markdown("---")
     st.sidebar.subheader("👑 Área Administrativa")
-    
+
     with st.sidebar.expander("Gerenciar Usuários"):
         st.write("**Adicionar novo usuário:**")
-        
+
         with st.form("admin_add_user_form"):
             novo_usuario = st.text_input("Usuário:", key="admin_novo_usuario")
             nova_senha = st.text_input("Senha:", type="password", key="admin_nova_senha")
-            confirmar_senha = st.text_input("Confirmar Senha:", type="password", key="admin_confirmar_senha")
-            
+            confirmar_senha = st.text_input("Confirmar Senha:", type="password",
+                                           key="admin_confirmar_senha")
+
             if st.form_submit_button("Cadastrar Usuário", use_container_width=True):
                 if nova_senha == confirmar_senha and novo_usuario and nova_senha:
-                    from auth import carregar_usuarios, salvar_usuarios, criar_hash_senha
-                    from datetime import datetime
                     
                     usuarios = carregar_usuarios()
                     if novo_usuario not in usuarios:
@@ -109,16 +113,17 @@ if eh_administrador():
                             'data_criacao': datetime.now().isoformat()
                         }
                         salvar_usuarios(usuarios)
-                        st.success(f"✅ Usuário '{novo_usuario}' cadastrado com sucesso!")
+                        st.success(f"✅ Usuário '{novo_usuario}' cadastrado com "
+                                   f"sucesso!")
                         st.rerun()
                     else:
                         st.error("❌ Usuário já existe!")
                 else:
-                    st.error("❌ Preencha todos os campos e confirme a senha corretamente!")
+                    st.error("❌ Preencha todos os campos e confirme a senha "
+                             "corretamente!")
         
         # Listar usuários existentes
         st.write("**Usuários cadastrados:**")
-        from auth import carregar_usuarios
         usuarios = carregar_usuarios()
         for usuario in usuarios.keys():
             if usuario == 'admin':
@@ -129,10 +134,8 @@ else:
     st.sidebar.markdown("---")
     st.sidebar.info("🔒 Apenas o administrador pode gerenciar usuários.")
 
-# Seção para alterar senha (disponível para todos os usuários)
-st.sidebar.markdown("---")
-st.sidebar.subheader("🔑 Minha Conta")
-alterar_senha_usuario()
+# Seção de alterar senha removida do dashboard
+# Agora está disponível na tela de login
 
 
 

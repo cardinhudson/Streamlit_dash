@@ -96,26 +96,26 @@ Dashboard interativo para visualização de dados TC - KE5Z com sistema de auten
 4. **Rejeitar:** Ou clique em "❌ Rejeitar" para remover o usuário
 5. **Visualizar:** Use "👁️ Ver" para ver detalhes do usuário
 6. **Excluir:** Na seção "📋 Gerenciar Todos os Usuários", clique em "🗑️ Excluir"
+7. **Confirmar:** Clique em "✅ Confirmar" para excluir ou "❌ Cancelar" para desistir
+8. **Alterar Senha:** Clique em "🔑 Alterar Senha" para modificar senha de usuários
+9. **Nova Senha:** Digite nova senha e confirme, clique em "💾 Salvar"
 
 **🔐 SEGURANÇA:** Usuários só podem acessar o sistema após aprovação do admin!
 **🛡️ PROTEÇÃO:** O usuário admin NÃO pode ser excluído do sistema!
+**⚠️ CONFIRMAÇÃO:** Sistema pede confirmação antes de excluir usuários!
+**🔑 CONTROLE TOTAL:** Admin pode alterar senhas e excluir qualquer usuário!
 
 ### Alterar Senha
 **TODOS OS USUÁRIOS PODEM ALTERAR SUAS PRÓPRIAS SENHAS**
 
-#### **Opção 1: No Dashboard (usuário logado)**
-1. Faça login com seu usuário
-2. No sidebar, use a seção "🔑 Minha Conta"
-3. **Interface automática:** Mostra qual usuário está alterando a senha
-4. Digite sua senha atual e a nova senha
-5. Confirme a nova senha e clique em "Alterar Senha"
-
-#### **Opção 2: Na Tela de Login (sem estar logado)**
+#### **Alterar Senha (na Tela de Login)**
 1. **NÃO precisa fazer login primeiro**
 2. Na tela de login, expanda "🔑 Alterar Minha Senha"
 3. **Informe o nome de usuário** que deseja alterar a senha
 4. Digite a senha atual e a nova senha
 5. Confirme a nova senha e clique em "Alterar Senha"
+
+**📍 LOCALIZAÇÃO:** Funcionalidade centralizada na tela de login, ao lado da área administrativa
 
 **🔐 Segurança:** É necessário informar a senha atual para alterar a senha!
 **👤 Transparência:** A interface mostra claramente qual usuário está alterando a senha!
