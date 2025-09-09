@@ -3,10 +3,26 @@ import streamlit as st
 import pandas as pd
 import os
 import altair as alt
+import subprocess
+import sys
 from auth import (verificar_autenticacao, exibir_header_usuario,
                   eh_administrador, verificar_status_aprovado,
                   carregar_usuarios, salvar_usuarios, criar_hash_senha)
 from datetime import datetime
+
+def executar_extracao():
+    """Executa o script de extração e retorna o status"""
+    try:
+        # Executar o script de extração
+        result = subprocess.run([sys.executable, "Extração.py"], 
+                              capture_output=True, text=True, cwd=os.getcwd())
+        
+        if result.returncode == 0:
+            return True, "Extração executada com sucesso!"
+        else:
+            return False, f"Erro na extração: {result.stderr}"
+    except Exception as e:
+        return False, f"Erro ao executar extração: {str(e)}"
 
 # Configuração da página
 st.set_page_config(
@@ -121,6 +137,20 @@ if eh_administrador():
                 else:
                     st.error("❌ Preencha todos os campos e confirme a senha "
                              "corretamente!")
+    
+    # Botão para executar extração
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🔄 Atualizar Dados")
+    
+    if st.sidebar.button("📊 Executar Extração", use_container_width=True, type="primary"):
+        with st.spinner("Executando extração de dados..."):
+            sucesso, mensagem = executar_extracao()
+            
+            if sucesso:
+                st.sidebar.success(mensagem)
+                st.sidebar.info("🔄 Recarregue a página para ver os dados atualizados.")
+            else:
+                st.sidebar.error(mensagem)
         
         # Gerenciar usuários pendentes
         st.markdown("**Usuários pendentes de aprovação:**")
