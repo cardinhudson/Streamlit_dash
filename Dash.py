@@ -110,6 +110,9 @@ st.sidebar.write(f"Soma do Valor total: R$ {df_filtrado['Valor'].sum():,.2f}")
 if eh_administrador():
     st.sidebar.markdown("---")
     st.sidebar.subheader("👑 Área Administrativa")
+    
+    # Carregar usuários uma única vez
+    usuarios = carregar_usuarios()
 
     with st.sidebar.expander("Gerenciar Usuários"):
         st.write("**Adicionar novo usuário:**")
@@ -122,19 +125,27 @@ if eh_administrador():
 
             if st.form_submit_button("Cadastrar Usuário", use_container_width=True):
                 if nova_senha == confirmar_senha and novo_usuario and nova_senha:
-                    usuarios = carregar_usuarios()
-                    if novo_usuario not in usuarios:
-                        usuarios[novo_usuario] = {
-                            'senha': criar_hash_senha(nova_senha),
-                            'data_criacao': datetime.now().isoformat(),
-                            'status': 'pendente'
-                        }
-                        salvar_usuarios(usuarios)
-                        st.success(f"✅ Usuário '{novo_usuario}' cadastrado com "
-                                   f"sucesso!")
-                        st.rerun()
-                    else:
-                        st.error("❌ Usuário já existe!")
+                    try:
+                        st.write(f"Debug - Usuários antes: {list(usuarios.keys())}")
+                        
+                        if novo_usuario not in usuarios:
+                            usuarios[novo_usuario] = {
+                                'senha': criar_hash_senha(nova_senha),
+                                'data_criacao': datetime.now().isoformat(),
+                                'status': 'pendente'
+                            }
+                            
+                            st.write(f"Debug - Usuários após adicionar: {list(usuarios.keys())}")
+                            
+                            salvar_usuarios(usuarios)
+                            
+                            st.success(f"✅ Usuário '{novo_usuario}' cadastrado com "
+                                       f"sucesso!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Usuário já existe!")
+                    except Exception as e:
+                        st.error(f"❌ Erro ao cadastrar usuário: {str(e)}")
                 else:
                     st.error("❌ Preencha todos os campos e confirme a senha "
                              "corretamente!")
@@ -159,7 +170,6 @@ if eh_administrador():
     st.sidebar.markdown("---")
     st.sidebar.subheader("👥 Usuários Pendentes")
     
-    usuarios = carregar_usuarios()
     usuarios_pendentes = {k: v for k, v in usuarios.items() 
                           if v.get('status') == 'pendente'}
     
