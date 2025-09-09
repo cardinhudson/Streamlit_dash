@@ -111,8 +111,17 @@ if eh_administrador():
     st.sidebar.markdown("---")
     st.sidebar.subheader("👑 Área Administrativa")
     
-    # Carregar usuários uma única vez
-    usuarios = carregar_usuarios()
+    # Inicializar usuários no session_state se não existir
+    if 'usuarios' not in st.session_state:
+        st.session_state.usuarios = carregar_usuarios()
+    
+    usuarios = st.session_state.usuarios
+    
+    # Aviso sobre armazenamento temporário no Streamlit Cloud
+    st.sidebar.info(
+        "ℹ️ **Nota:** No Streamlit Cloud, as mudanças de usuários são "
+        "temporárias e serão perdidas ao recarregar a página."
+    )
 
     with st.sidebar.expander("Gerenciar Usuários"):
         st.write("**Adicionar novo usuário:**")
@@ -126,18 +135,26 @@ if eh_administrador():
             if st.form_submit_button("Cadastrar Usuário", use_container_width=True):
                 if nova_senha == confirmar_senha and novo_usuario and nova_senha:
                     try:
-                        st.write(f"Debug - Usuários antes: {list(usuarios.keys())}")
-                        
                         if novo_usuario not in usuarios:
+                            # Adicionar usuário ao session_state
                             usuarios[novo_usuario] = {
                                 'senha': criar_hash_senha(nova_senha),
                                 'data_criacao': datetime.now().isoformat(),
                                 'status': 'pendente'
                             }
                             
-                            st.write(f"Debug - Usuários após adicionar: {list(usuarios.keys())}")
+                            # Atualizar session_state
+                            st.session_state.usuarios = usuarios
                             
-                            salvar_usuarios(usuarios)
+                            # Tentar salvar no arquivo (pode falhar no Streamlit Cloud)
+                            try:
+                                salvar_usuarios(usuarios)
+                            except Exception as save_error:
+                                st.warning(
+                                    f"⚠️ Usuário cadastrado na sessão atual, mas "
+                                    f"não foi salvo permanentemente: "
+                                    f"{str(save_error)}"
+                                )
                             
                             st.success(f"✅ Usuário '{novo_usuario}' cadastrado com "
                                        f"sucesso!")
@@ -189,7 +206,17 @@ if eh_administrador():
                                 help="Aprovar usuário"):
                         usuarios[usuario]['status'] = 'aprovado'
                         usuarios[usuario]['aprovado_em'] = datetime.now().isoformat()
-                        salvar_usuarios(usuarios)
+                        st.session_state.usuarios = usuarios
+                        
+                        try:
+                            salvar_usuarios(usuarios)
+                        except Exception as save_error:
+                            st.warning(
+                                f"⚠️ Usuário aprovado na sessão atual, mas "
+                                f"mudanças não foram salvas permanentemente: "
+                                f"{str(save_error)}"
+                            )
+                        
                         st.success(f"✅ Usuário '{usuario}' aprovado!")
                         st.rerun()
                 
@@ -197,7 +224,17 @@ if eh_administrador():
                     if st.button("❌", key=f"rejeitar_{usuario}", 
                                 help="Rejeitar usuário"):
                         del usuarios[usuario]
-                        salvar_usuarios(usuarios)
+                        st.session_state.usuarios = usuarios
+                        
+                        try:
+                            salvar_usuarios(usuarios)
+                        except Exception as save_error:
+                            st.warning(
+                                f"⚠️ Usuário removido da sessão atual, mas "
+                                f"mudanças não foram salvas permanentemente: "
+                                f"{str(save_error)}"
+                            )
+                        
                         st.success(f"❌ Usuário '{usuario}' removido!")
                         st.rerun()
                 
@@ -228,7 +265,17 @@ if eh_administrador():
                     if st.button("🗑️", key=f"excluir_{usuario}", 
                                 help="Excluir usuário"):
                         del usuarios[usuario]
-                        salvar_usuarios(usuarios)
+                        st.session_state.usuarios = usuarios
+                        
+                        try:
+                            salvar_usuarios(usuarios)
+                        except Exception as save_error:
+                            st.warning(
+                                f"⚠️ Usuário excluído da sessão atual, mas "
+                                f"mudanças não foram salvas permanentemente: "
+                                f"{str(save_error)}"
+                            )
+                        
                         st.success(f"✅ Usuário '{usuario}' excluído!")
                         st.rerun()
 else:
