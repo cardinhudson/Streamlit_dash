@@ -3,9 +3,27 @@ import os
 import pandas as pd
 
 
-# criar um caminho para esta pasta para qualquer usuario C:\Users\u235107\Stellantis\GEIB - GEIB\Partagei_2025\1 - SÍNTESE\11 - SAPIENS\02 - Extrações\KE5Z"
-pasta = os.path.join(os.path.expanduser("~"), "Stellantis", "GEIB - GEIB", "Partagei_2025", "1 - SÍNTESE", "11 - SAPIENS", "02 - Extrações", "KE5Z")
-print(pasta)
+# Definir as duas pastas possíveis para KE5Z
+pasta_opcoes = [
+    os.path.join(os.path.expanduser("~"), "Stellantis", "GEIB - General", "GEIB", "Partagei_2025", "1 - SÍNTESE", "11 - SAPIENS", "02 - Extrações", "KE5Z"),
+    os.path.join(os.path.expanduser("~"), "Stellantis", "GEIB - GEIB", "Partagei_2025", "1 - SÍNTESE", "11 - SAPIENS", "02 - Extrações", "KE5Z")
+]
+
+# Procurar a pasta que existe
+pasta = None
+for pasta_opcao in pasta_opcoes:
+    if os.path.exists(pasta_opcao):
+        pasta = pasta_opcao
+        break
+
+if pasta is None:
+    print("ERRO: Nenhuma das pastas KE5Z foi encontrada!")
+    print("Pastas procuradas:")
+    for pasta_opcao in pasta_opcoes:
+        print(f"  - {pasta_opcao}")
+    exit(1)
+
+print(f"Pasta encontrada: {pasta}")
 # Lista para armazenar os DataFrames
 dataframes = []
 
@@ -81,9 +99,27 @@ print(len(df_total))
 print(df_total.head(10))  # Exibir as primeiras linhas do DataFrame total
 
 
-# criar um caminho para esta pasta para qualquer usuario C:\Users\u235107\Stellantis\GEIB - GEIB\Partagei_2025\1 - SÍNTESE\11 - SAPIENS\02 - Extrações\KSBB"
-pasta_ksbb = os.path.join(os.path.expanduser("~"), "Stellantis", "GEIB - GEIB", "Partagei_2025", "1 - SÍNTESE", "11 - SAPIENS", "02 - Extrações", "KSBB")
-print(pasta_ksbb)
+# Definir as duas pastas possíveis para KSBB
+pasta_ksbb_opcoes = [
+    os.path.join(os.path.expanduser("~"), "Stellantis", "GEIB - General", "GEIB", "Partagei_2025", "1 - SÍNTESE", "11 - SAPIENS", "02 - Extrações", "KSBB"),
+    os.path.join(os.path.expanduser("~"), "Stellantis", "GEIB - GEIB", "Partagei_2025", "1 - SÍNTESE", "11 - SAPIENS", "02 - Extrações", "KSBB")
+]
+
+# Procurar a pasta que existe
+pasta_ksbb = None
+for pasta_opcao in pasta_ksbb_opcoes:
+    if os.path.exists(pasta_opcao):
+        pasta_ksbb = pasta_opcao
+        break
+
+if pasta_ksbb is None:
+    print("ERRO: Nenhuma das pastas KSBB foi encontrada!")
+    print("Pastas procuradas:")
+    for pasta_opcao in pasta_ksbb_opcoes:
+        print(f"  - {pasta_opcao}")
+    exit(1)
+
+print(f"Pasta KSBB encontrada: {pasta_ksbb}")
 # Lista para armazenar os DataFrames
 dataframes_ksbb = []
 

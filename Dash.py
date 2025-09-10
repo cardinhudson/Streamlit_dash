@@ -10,30 +10,33 @@ from auth import (verificar_autenticacao, exibir_header_usuario,
                   carregar_usuarios, salvar_usuarios, criar_hash_senha)
 from datetime import datetime
 
+
 def executar_extracao():
     """Executa o script de extração e retorna o status"""
     try:
         # Verificar se o arquivo de extração existe
-        if not os.path.exists("Extração.py"):
-            return False, "Arquivo 'Extração.py' não encontrado!"
-
+        arquivo_extracao = "Extração.py"
+        if not os.path.exists(arquivo_extracao):
+            return False, f"Arquivo '{arquivo_extracao}' não encontrado!"
+        
         # Executar o script de extração
-        result = subprocess.run([sys.executable, "Extração.py"],
+        result = subprocess.run([sys.executable, arquivo_extracao],
                                 capture_output=True, text=True,
                                 cwd=os.getcwd(),
                                 timeout=300)  # Timeout de 5 minutos
-
+        
         if result.returncode == 0:
-            return True, "✅ Extração executada com sucesso!"
+            return True, "SUCESSO: Extração executada com sucesso!"
         else:
             error_msg = result.stderr if result.stderr else "Erro desconhecido"
-            return False, f"❌ Erro na extração: {error_msg}"
+            return False, f"ERRO: Erro na extração: {error_msg}"
     except subprocess.TimeoutExpired:
-        return False, "⏰ Timeout: A extração demorou mais de 5 minutos"
+        return False, "ERRO: Timeout - A extração demorou mais de 5 minutos"
     except FileNotFoundError:
-        return False, "❌ Python não encontrado no sistema"
+        return False, "ERRO: Python não encontrado no sistema"
     except Exception as e:
-        return False, f"❌ Erro ao executar extração: {str(e)}"
+        return False, f"ERRO: Erro ao executar extração: {str(e)}"
+
 
 # Configuração da página
 st.set_page_config(
@@ -195,16 +198,16 @@ if eh_administrador():
                         st.error("❌ Preencha todos os campos e confirme a "
                                   "senha corretamente!")
 
-    # Botão para executar extração
+    # Seção de atualização de dados
     st.sidebar.markdown("---")
     st.sidebar.subheader("🔄 Atualizar Dados")
-
-    if st.sidebar.button("📊 Executar Extração", 
-                         use_container_width=True,
-                         type="primary"):
+    
+    # Extração local
+    if st.sidebar.button("📊 Executar Extração Local", 
+                         use_container_width=True):
         with st.spinner("Executando extração de dados..."):
             sucesso, mensagem = executar_extracao()
-
+            
             if sucesso:
                 st.sidebar.success(mensagem)
                 st.sidebar.info("🔄 Recarregue a página para ver os dados "
