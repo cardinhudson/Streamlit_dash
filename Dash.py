@@ -70,7 +70,7 @@ df_total = df_total[df_total['USI'].notna() & (df_total['USI'] != 'Others')]
 col1, col2, col3 = st.columns([2, 1, 1])
 with col1:
     st.title("📊 Dashboard - Visualização de Dados TC - KE5Z")
-    st.subheader("Somente os dados com as contas do Perímetro TC")
+st.subheader("Somente os dados com as contas do Perímetro TC")
 
 # Exibir header do usuário
 exibir_header_usuario()
@@ -361,15 +361,15 @@ st.subheader("Tabela Filtrada")
 st.dataframe(df_filtrado)
 
 # Botão para download da tabela filtrada
-excel_data_filtrada = exportar_excel(df_filtrado, 'KE5Z_tabela_filtrada.xlsx')
-st.download_button(
-    label="📥 Baixar Tabela Filtrada (Excel)",
-    data=excel_data_filtrada,
-    file_name='KE5Z_tabela_filtrada.xlsx',
-    mime='application/vnd.openxmlformats-officedocument.'
-         'spreadsheetml.sheet',
-    use_container_width=True
-)
+if st.button("📥 Baixar Tabela Filtrada (Excel)", use_container_width=True):
+    excel_data_filtrada = exportar_excel(df_filtrado, 'KE5Z_tabela_filtrada.xlsx')
+    st.download_button(
+        label="💾 Download Excel",
+        data=excel_data_filtrada,
+        file_name='KE5Z_tabela_filtrada.xlsx',
+        mime='application/vnd.openxmlformats-officedocument.'
+             'spreadsheetml.sheet'
+    )
 
 
 # Criar uma tabela com a soma dos valores por Type 05, Type 06 e Type 07
@@ -401,15 +401,15 @@ styled_df = soma_por_type.style.format({'Valor': 'R$ {:,.2f}'}).applymap(
 st.dataframe(styled_df)
 
 # Botão para download da tabela de soma
-excel_data_soma = exportar_excel(soma_por_type, 'KE5Z_soma_por_type.xlsx')
-st.download_button(
-    label="📥 Baixar Soma por Type (Excel)",
-    data=excel_data_soma,
-    file_name='KE5Z_soma_por_type.xlsx',
-    mime='application/vnd.openxmlformats-officedocument.'
-         'spreadsheetml.sheet',
-    use_container_width=True
-)
+if st.button("📥 Baixar Soma por Type (Excel)", use_container_width=True):
+    excel_data_soma = exportar_excel(soma_por_type, 'KE5Z_soma_por_type.xlsx')
+    st.download_button(
+        label="💾 Download Excel",
+        data=excel_data_soma,
+        file_name='KE5Z_soma_por_type.xlsx',
+        mime='application/vnd.openxmlformats-officedocument.'
+             'spreadsheetml.sheet'
+    )
 
 # %%
 # Criar um gráfico de barras para a soma dos valores por 'Type 05', 'Type 06' e 'Type 07'
