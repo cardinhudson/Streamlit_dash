@@ -13,17 +13,27 @@ from datetime import datetime
 def executar_extracao():
     """Executa o script de extração e retorna o status"""
     try:
+        # Verificar se o arquivo de extração existe
+        if not os.path.exists("Extração.py"):
+            return False, "Arquivo 'Extração.py' não encontrado!"
+
         # Executar o script de extração
         result = subprocess.run([sys.executable, "Extração.py"],
                                 capture_output=True, text=True,
-                                cwd=os.getcwd())
-        
+                                cwd=os.getcwd(),
+                                timeout=300)  # Timeout de 5 minutos
+
         if result.returncode == 0:
-            return True, "Extração executada com sucesso!"
+            return True, "✅ Extração executada com sucesso!"
         else:
-            return False, f"Erro na extração: {result.stderr}"
+            error_msg = result.stderr if result.stderr else "Erro desconhecido"
+            return False, f"❌ Erro na extração: {error_msg}"
+    except subprocess.TimeoutExpired:
+        return False, "⏰ Timeout: A extração demorou mais de 5 minutos"
+    except FileNotFoundError:
+        return False, "❌ Python não encontrado no sistema"
     except Exception as e:
-        return False, f"Erro ao executar extração: {str(e)}"
+        return False, f"❌ Erro ao executar extração: {str(e)}"
 
 # Configuração da página
 st.set_page_config(
@@ -39,9 +49,9 @@ verificar_autenticacao()
 # Verificar se o usuário está aprovado
 if 'usuario_nome' in st.session_state and not verificar_status_aprovado(st.session_state.usuario_nome):
     st.warning("⏳ Sua conta ainda está pendente de aprovação. "
-       "Aguarde o administrador aprovar seu acesso.")
+               "Aguarde o administrador aprovar seu acesso.")
     st.info("📧 Você receberá uma notificação quando sua conta for "
-    "aprovada.")
+            "aprovada.")
     st.stop()
 
 # Caminho do arquivo parquet
@@ -110,19 +120,19 @@ st.sidebar.write(f"Soma do Valor total: R$ {df_filtrado['Valor'].sum():,.2f}")
 if eh_administrador():
     st.sidebar.markdown("---")
     st.sidebar.subheader("👑 Área Administrativa")
-    
+
     # Inicializar usuários no session_state se não existir
     if 'usuarios' not in st.session_state:
         st.session_state.usuarios = carregar_usuarios()
-    
+
     usuarios = st.session_state.usuarios
-    
+
     # Aviso sobre armazenamento temporário no Streamlit Cloud
     st.sidebar.info(
         "ℹ️ **Nota:** No Streamlit Cloud, as mudanças de usuários são "
         "temporárias e serão perdidas ao recarregar a página."
     )
-    
+
     # Status de salvamento
     try:
         # Tentar salvar para verificar se funciona
@@ -131,12 +141,14 @@ if eh_administrador():
     except Exception as e:
         st.sidebar.warning("💾 Salvamento: ❌ Não disponível")
         st.sidebar.caption(f"Erro: {str(e)[:50]}...")
-    
+
     # Status atual dos usuários
     total_usuarios = len(usuarios)
-    usuarios_aprovados = len([u for u in usuarios.values() if u.get('status') == 'aprovado'])
-    usuarios_pendentes = len([u for u in usuarios.values() if u.get('status') == 'pendente'])
-    
+    usuarios_aprovados = len([u for u in usuarios.values()
+                              if u.get('status') == 'aprovado'])
+    usuarios_pendentes = len([u for u in usuarios.values()
+                              if u.get('status') == 'pendente'])
+
     st.sidebar.metric("👥 Total", total_usuarios)
     st.sidebar.metric("✅ Aprovados", usuarios_aprovados)
     st.sidebar.metric("⏳ Pendentes", usuarios_pendentes)
@@ -147,7 +159,8 @@ if eh_administrador():
         with st.form("admin_add_user_form"):
             novo_usuario = st.text_input("Usuário:", key="admin_novo_usuario")
             nova_senha = st.text_input("Senha:", type="password", key="admin_nova_senha")
-            confirmar_senha = st.text_input("Confirmar Senha:", type="password",
+            confirmar_senha = st.text_input("Confirmar Senha:", 
+                                             type="password",
                                              key="admin_confirmar_senha")
 
             if st.form_submit_button("Cadastrar Usuário", use_container_width=True):
@@ -160,131 +173,135 @@ if eh_administrador():
                                 'data_criacao': datetime.now().isoformat(),
                                 'status': 'pendente'
                             }
-                            
+
                             # Atualizar session_state
                             st.session_state.usuarios = usuarios
-                            
+
                             # Salvar dados
                             try:
                                 salvar_usuarios(usuarios)
                                 st.success("💾 Dados salvos com sucesso!")
                             except Exception as save_error:
                                 st.warning(f"⚠️ Erro ao salvar: {str(save_error)}")
-                            
-                            st.success(f"✅ Usuário '{novo_usuario}' cadastrado com "
-                                       f"sucesso!")
+
+                            st.success(f"✅ Usuário '{novo_usuario}' cadastrado "
+                                       f"com sucesso!")
                             st.rerun()
                         else:
                             st.error("❌ Usuário já existe!")
                     except Exception as e:
                         st.error(f"❌ Erro ao cadastrar usuário: {str(e)}")
                 else:
-                    st.error("❌ Preencha todos os campos e confirme a senha "
-                             "corretamente!")
-    
+                        st.error("❌ Preencha todos os campos e confirme a "
+                                  "senha corretamente!")
+
     # Botão para executar extração
     st.sidebar.markdown("---")
     st.sidebar.subheader("🔄 Atualizar Dados")
-    
-    if st.sidebar.button("📊 Executar Extração", use_container_width=True,
+
+    if st.sidebar.button("📊 Executar Extração", 
+                         use_container_width=True,
                          type="primary"):
         with st.spinner("Executando extração de dados..."):
             sucesso, mensagem = executar_extracao()
-            
+
             if sucesso:
                 st.sidebar.success(mensagem)
                 st.sidebar.info("🔄 Recarregue a página para ver os dados "
                                 "atualizados.")
             else:
                 st.sidebar.error(mensagem)
-    
+
     # Gerenciar usuários pendentes (fora do expander)
     st.sidebar.markdown("---")
     st.sidebar.subheader("👥 Usuários Pendentes")
-    
-    usuarios_pendentes = {k: v for k, v in usuarios.items() 
+
+    usuarios_pendentes = {k: v for k, v in usuarios.items()
                           if v.get('status') == 'pendente'}
-    
+
     if usuarios_pendentes:
         for usuario, dados in usuarios_pendentes.items():
             with st.sidebar.container():
                 col1, col2, col3 = st.columns([2, 1, 1])
-                
+
                 with col1:
                     st.write(f"👤 **{usuario}**")
                     if dados.get('email'):
                         st.write(f"📧 {dados['email']}")
                     st.write(f"📅 {dados.get('data_criacao', 'N/A')[:10]}")
-                
+
                 with col2:
-                    if st.button("✅", key=f"aprovar_{usuario}", 
+                    if st.button("✅", key=f"aprovar_{usuario}",
                                 help="Aprovar usuário"):
                         usuarios[usuario]['status'] = 'aprovado'
-                        usuarios[usuario]['aprovado_em'] = datetime.now().isoformat()
+                        usuarios[usuario]['aprovado_em'] = (
+                            datetime.now().isoformat())
                         st.session_state.usuarios = usuarios
-                        
+
                         # Salvar dados
                         try:
                             salvar_usuarios(usuarios)
                             st.success("💾 Dados salvos com sucesso!")
                         except Exception as save_error:
                             st.warning(f"⚠️ Erro ao salvar: {str(save_error)}")
-                        
+
                         st.success(f"✅ Usuário '{usuario}' aprovado!")
                         st.rerun()
-                
+
                 with col3:
-                    if st.button("❌", key=f"rejeitar_{usuario}", 
+                    if st.button("❌", key=f"rejeitar_{usuario}",
                                 help="Rejeitar usuário"):
                         del usuarios[usuario]
                         st.session_state.usuarios = usuarios
-                        
+
                         # Salvar dados
                         try:
                             salvar_usuarios(usuarios)
                             st.success("💾 Dados salvos com sucesso!")
                         except Exception as save_error:
                             st.warning(f"⚠️ Erro ao salvar: {str(save_error)}")
-                        
+
                         st.success(f"❌ Usuário '{usuario}' removido!")
                         st.rerun()
-                
+
                 st.sidebar.markdown("---")
     else:
         st.sidebar.info("✅ Nenhum usuário pendente de aprovação.")
-    
+
     # Listar todos os usuários (fora do expander)
     st.sidebar.markdown("---")
     st.sidebar.subheader("📋 Todos os Usuários")
-    
+
     for usuario, dados in usuarios.items():
         with st.sidebar.container():
             col1, col2 = st.columns([3, 1])
-            
+
             with col1:
                 if usuario == 'admin':
                     st.write("👑 **admin** (Administrador)")
                 else:
-                    status_icon = "✅" if dados.get('status') == 'aprovado' else "⏳"
-                    status_text = "Aprovado" if dados.get('status') == 'aprovado' else "Pendente"
+                    status_icon = ("✅" if dados.get('status') == 'aprovado' 
+                                   else "⏳")
+                    status_text = ("Aprovado" if dados.get('status') == 'aprovado' 
+                                   else "Pendente")
                     st.write(f"{status_icon} **{usuario}** - {status_text}")
                     if dados.get('email'):
                         st.write(f"📧 {dados['email']}")
-            
+
             with col2:
                 if usuario != 'admin':
-                    if st.button("🗑️", key=f"excluir_{usuario}", 
+                    if st.button("🗑️", key=f"excluir_{usuario}",
                                 help="Excluir usuário"):
                         del usuarios[usuario]
                         st.session_state.usuarios = usuarios
-                        
+
                         # Salvar dados
                         try:
                             salvar_usuarios(usuarios)
                             st.success("💾 Dados salvos com sucesso!")
                         except Exception as save_error:
                             st.warning(f"⚠️ Erro ao salvar: {str(save_error)}")
-                        
+
                         st.success(f"✅ Usuário '{usuario}' excluído!")
                         st.rerun()
 else:
@@ -333,14 +350,29 @@ st.subheader("Tabela Filtrada")
 st.dataframe(df_filtrado)
 
 # Botão para exportar os dados filtrados para Excel
-caminho_downloads = os.path.join(os.path.expanduser("~"), "Downloads")
-if st.button("Exportar Tabela Filtrada para Excel"):
-    caminho_saida_excel_filtrado = os.path.join(caminho_downloads, 'KE5Z_tabela_filtrada.xlsx')
-    df_filtrado.to_excel(caminho_saida_excel_filtrado, index=False)
-    st.success(f"Tabela filtrada exportada com sucesso para {caminho_saida_excel_filtrado}")
+def exportar_excel(df, nome_arquivo):
+    """Exporta DataFrame para Excel e retorna bytes para download"""
+    from io import BytesIO
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Dados')
+    output.seek(0)
+    return output.getvalue()
+
+if st.button("📥 Baixar Tabela Filtrada (Excel)"):
+    excel_data = exportar_excel(df_filtrado,
+                                'KE5Z_tabela_filtrada.xlsx')
+    st.download_button(
+        label="💾 Download Excel",
+        data=excel_data,
+        file_name='KE5Z_tabela_filtrada.xlsx',
+        mime='application/vnd.openxmlformats-officedocument.'
+             'spreadsheetml.sheet'
+    )
 
 # Criar uma tabela com a soma dos valores por Type 05, Type 06 e Type 07
-soma_por_type = df_filtrado.groupby(['Type 05', 'Type 06', 'Type 07'])['Valor'].sum().reset_index()
+soma_por_type = (df_filtrado.groupby(['Type 05', 'Type 06', 'Type 07'])['Valor']
+                 .sum().reset_index())
 
 # Adicionar uma linha com a soma total na última linha
 soma_total = pd.DataFrame({
@@ -353,16 +385,29 @@ soma_por_type = pd.concat([soma_por_type, soma_total], ignore_index=True)
 
 # Exibir a tabela com a soma total e formatar a coluna de valorres como moeda e vermelho negativo e verde positivo
 st.subheader("Soma dos Valores por Type 05, Type 06 e Type 07 (com Total)")
-st.dataframe(soma_por_type.style.format({'Valor': 'R$ {:,.2f}'}).applymap(lambda x: 'color: red;' if isinstance(x, (int, float)) and x < 0 else 'color: green;' if isinstance(x, (int, float)) and x > 0 else '', subset=['Valor']))
+# Formatar dataframe com cores
+def colorir_valores(val):
+    if isinstance(val, (int, float)) and val < 0:
+        return 'color: red;'
+    elif isinstance(val, (int, float)) and val > 0:
+        return 'color: green;'
+    return ''
+
+styled_df = soma_por_type.style.format({'Valor': 'R$ {:,.2f}'}).applymap(
+    colorir_valores, subset=['Valor'])
+st.dataframe(styled_df)
 
 # Botão para exportar a soma dos valores por Type 05, Type 06 e Type 07 para Excel
-caminho_downloads = os.path.join(os.path.expanduser("~"), "Downloads")
-
-if st.button("Exportar Soma por Type para Excel"):
-    caminho_saida_excel_soma = os.path.join(caminho_downloads, 'KE5Z_soma_por_type.xlsx')
-    soma_por_type.to_excel(caminho_saida_excel_soma, index=False)
-    st.success(f"Soma por Type exportada com sucesso para {caminho_saida_excel_soma}")
-
+if st.button("📥 Baixar Soma por Type (Excel)"):
+    excel_data = exportar_excel(soma_por_type,
+                                'KE5Z_soma_por_type.xlsx')
+    st.download_button(
+        label="💾 Download Excel",
+        data=excel_data,
+        file_name='KE5Z_soma_por_type.xlsx',
+        mime='application/vnd.openxmlformats-officedocument.'
+             'spreadsheetml.sheet'
+    )
 
 # %%
 # Criar um gráfico de barras para a soma dos valores por 'Type 05', 'Type 06' e 'Type 07'
@@ -421,4 +466,3 @@ grafico_completo = grafico_barras + rotulos
 
 # Exibir o gráfico no Streamlit
 st.altair_chart(grafico_completo, use_container_width=True)
-
