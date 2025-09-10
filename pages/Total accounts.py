@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
-from auth import verificar_autenticacao, exibir_header_usuario, verificar_status_aprovado
+import os
+from auth import (verificar_autenticacao, exibir_header_usuario,
+                  verificar_status_aprovado)
 
 # Configuração da página
 st.set_page_config(
@@ -14,16 +16,20 @@ st.set_page_config(
 verificar_autenticacao()
 
 # Verificar se o usuário está aprovado
-if 'usuario_nome' in st.session_state and not verificar_status_aprovado(st.session_state.usuario_nome):
-    st.warning("⏳ Sua conta ainda está pendente de aprovação. Aguarde o administrador aprovar seu acesso.")
-    st.info("📧 Você receberá uma notificação quando sua conta for aprovada.")
+if ('usuario_nome' in st.session_state and 
+    not verificar_status_aprovado(st.session_state.usuario_nome)):
+    st.warning("⏳ Sua conta ainda está pendente de aprovação. "
+               "Aguarde o administrador aprovar seu acesso.")
+    st.info("📧 Você receberá uma notificação quando sua conta for "
+            "aprovada.")
     st.stop()
 
 # Header com informações do usuário
 col1, col2, col3 = st.columns([2, 1, 1])
 with col1:
     st.title("📊 Total Accounts - Centro de Lucro 02S")
-    st.subheader("Somatório de todas as contas do centro de lucro 02S, exceto as contas D_B")
+    st.subheader("Somatório de todas as contas do centro de lucro 02S, "
+                 "exceto as contas D_B")
 
 # Exibir header do usuário
 exibir_header_usuario()
@@ -31,10 +37,18 @@ exibir_header_usuario()
 st.markdown("---")
 
 # Conteúdo da nova página
-st.write("Esta página contém o somatório de todas as contas do centro de lucro 02S, exceto as contas D_B!")
+st.write("Esta página contém o somatório de todas as contas do centro de "
+         "lucro 02S, exceto as contas D_B!")
 
 # Caminho do arquivo parquet
-arquivo_parquet = r"KE5Z\KE5Z.parquet"
+arquivo_parquet = os.path.join("KE5Z", "KE5Z.parquet")
+
+# Verificar se o arquivo existe antes de tentar lê-lo
+if not os.path.exists(arquivo_parquet):
+    st.error(f"❌ Arquivo não encontrado: {arquivo_parquet}")
+    st.info("💡 Execute a extração de dados na página principal para "
+            "gerar o arquivo necessário.")
+    st.stop()
 
 # Ler o arquivo parquet
 df_principal = pd.read_parquet(arquivo_parquet)
