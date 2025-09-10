@@ -345,11 +345,7 @@ df_pivot = df_filtrado.pivot_table(index='USI', columns='Período', values='Valo
 st.subheader("Tabela Dinâmica - Soma do Valor por USI e Período")
 st.dataframe(df_pivot.style.format('R$ {:,.2f}').applymap(lambda x: 'color: red;' if x < 0 else 'color: green;' if x > 0 else '', subset=pd.IndexSlice[:, :]))  # Formatar como moeda e vermelho negativo e azul positivo
 
-# Exibir o DataFrame filtrado
-st.subheader("Tabela Filtrada")
-st.dataframe(df_filtrado)
-
-# Botão para exportar os dados filtrados para Excel
+# Função para exportar uma única tabela para Excel
 def exportar_excel(df, nome_arquivo):
     """Exporta DataFrame para Excel e retorna bytes para download"""
     from io import BytesIO
@@ -359,9 +355,14 @@ def exportar_excel(df, nome_arquivo):
     output.seek(0)
     return output.getvalue()
 
-if st.button("📥 Baixar Tabela Filtrada (Excel)"):
-    excel_data = exportar_excel(df_filtrado,
-                                'KE5Z_tabela_filtrada.xlsx')
+
+# Exibir o DataFrame filtrado
+st.subheader("Tabela Filtrada")
+st.dataframe(df_filtrado)
+
+# Botão para download da tabela filtrada
+if st.button("📥 Baixar Tabela Filtrada (Excel)", use_container_width=True):
+    excel_data = exportar_excel(df_filtrado, 'KE5Z_tabela_filtrada.xlsx')
     st.download_button(
         label="💾 Download Excel",
         data=excel_data,
@@ -369,6 +370,7 @@ if st.button("📥 Baixar Tabela Filtrada (Excel)"):
         mime='application/vnd.openxmlformats-officedocument.'
              'spreadsheetml.sheet'
     )
+
 
 # Criar uma tabela com a soma dos valores por Type 05, Type 06 e Type 07
 soma_por_type = (df_filtrado.groupby(['Type 05', 'Type 06', 'Type 07'])['Valor']
@@ -393,14 +395,14 @@ def colorir_valores(val):
         return 'color: green;'
     return ''
 
+
 styled_df = soma_por_type.style.format({'Valor': 'R$ {:,.2f}'}).applymap(
     colorir_valores, subset=['Valor'])
 st.dataframe(styled_df)
 
-# Botão para exportar a soma dos valores por Type 05, Type 06 e Type 07 para Excel
-if st.button("📥 Baixar Soma por Type (Excel)"):
-    excel_data = exportar_excel(soma_por_type,
-                                'KE5Z_soma_por_type.xlsx')
+# Botão para download da tabela de soma
+if st.button("📥 Baixar Soma por Type (Excel)", use_container_width=True):
+    excel_data = exportar_excel(soma_por_type, 'KE5Z_soma_por_type.xlsx')
     st.download_button(
         label="💾 Download Excel",
         data=excel_data,
