@@ -5,7 +5,7 @@ import pandas as pd
 
 # criar um caminho para esta pasta para qualquer usuario C:\Users\u235107\Stellantis\GEIB - GEIB\Partagei_2025\1 - SÍNTESE\11 - SAPIENS\02 - Extrações\KE5Z"
 pasta = os.path.join(os.path.expanduser("~"), "Stellantis", "GEIB - GEIB", "Partagei_2025", "1 - SÍNTESE", "11 - SAPIENS", "02 - Extrações", "KE5Z")
-
+print(pasta)
 # Lista para armazenar os DataFrames
 dataframes = []
 
@@ -83,7 +83,7 @@ print(df_total.head(10))  # Exibir as primeiras linhas do DataFrame total
 
 # criar um caminho para esta pasta para qualquer usuario C:\Users\u235107\Stellantis\GEIB - GEIB\Partagei_2025\1 - SÍNTESE\11 - SAPIENS\02 - Extrações\KSBB"
 pasta_ksbb = os.path.join(os.path.expanduser("~"), "Stellantis", "GEIB - GEIB", "Partagei_2025", "1 - SÍNTESE", "11 - SAPIENS", "02 - Extrações", "KSBB")
-
+print(pasta_ksbb)
 # Lista para armazenar os DataFrames
 dataframes_ksbb = []
 
