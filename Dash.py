@@ -5,73 +5,10 @@ import os
 import altair as alt
 import subprocess
 import sys
-import requests
-import base64
-import json
 from auth import (verificar_autenticacao, exibir_header_usuario,
                   eh_administrador, verificar_status_aprovado,
                   carregar_usuarios, salvar_usuarios, criar_hash_senha)
 from datetime import datetime
-
-def salvar_no_github(usuarios_data):
-    """Salva os dados dos usuários no GitHub usando a API"""
-    try:
-        # Configurações do GitHub (você precisa configurar essas variáveis)
-        github_token = st.secrets.get("GITHUB_TOKEN", "")
-        repo_owner = st.secrets.get("GITHUB_REPO_OWNER", "U235107")
-        repo_name = st.secrets.get("GITHUB_REPO_NAME", "Streamlit_dash")
-        
-        if not github_token:
-            return False, "❌ Token do GitHub não configurado"
-        
-        # URL da API do GitHub
-        url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/usuarios.json"
-        
-        # Converter dados para JSON
-        json_data = json.dumps(usuarios_data, indent=2, ensure_ascii=False)
-        
-        # Codificar em base64
-        encoded_data = base64.b64encode(json_data.encode('utf-8')).decode('utf-8')
-        
-        # Headers
-        headers = {
-            "Authorization": f"token {github_token}",
-            "Accept": "application/vnd.github.v3+json"
-        }
-        
-        # Primeiro, obter o SHA do arquivo atual
-        response = requests.get(url, headers=headers)
-        
-        if response.status_code == 200:
-            # Arquivo existe, obter SHA
-            file_data = response.json()
-            sha = file_data['sha']
-        elif response.status_code == 404:
-            # Arquivo não existe, criar novo
-            sha = None
-        else:
-            return False, f"❌ Erro ao acessar repositório: {response.status_code}"
-        
-        # Preparar dados para upload
-        data = {
-            "message": f"Atualização automática de usuários - {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}",
-            "content": encoded_data,
-            "branch": "main"
-        }
-        
-        if sha:
-            data["sha"] = sha
-        
-        # Fazer upload
-        response = requests.put(url, headers=headers, json=data)
-        
-        if response.status_code in [200, 201]:
-            return True, "✅ Dados salvos no GitHub com sucesso!"
-        else:
-            return False, f"❌ Erro ao salvar no GitHub: {response.status_code} - {response.text}"
-            
-    except Exception as e:
-        return False, f"❌ Erro inesperado: {str(e)}"
 
 def executar_extracao():
     """Executa o script de extração e retorna o status"""
@@ -190,19 +127,10 @@ if eh_administrador():
     try:
         # Tentar salvar para verificar se funciona
         salvar_usuarios(usuarios)
-        st.sidebar.success("💾 Salvamento local: ✅ Funcionando")
+        st.sidebar.success("💾 Salvamento: ✅ Funcionando")
     except Exception as e:
-        st.sidebar.warning("💾 Salvamento local: ❌ Não disponível")
+        st.sidebar.warning("💾 Salvamento: ❌ Não disponível")
         st.sidebar.caption(f"Erro: {str(e)[:50]}...")
-    
-    # Testar conexão com GitHub
-    if st.sidebar.button("🔗 Testar GitHub", help="Testar conexão com GitHub"):
-        with st.spinner("Testando conexão com GitHub..."):
-            sucesso, mensagem = salvar_no_github(usuarios)
-            if sucesso:
-                st.sidebar.success("🚀 GitHub: ✅ Conectado!")
-            else:
-                st.sidebar.error(f"🚀 GitHub: ❌ {mensagem}")
     
     # Status atual dos usuários
     total_usuarios = len(usuarios)
@@ -212,58 +140,6 @@ if eh_administrador():
     st.sidebar.metric("👥 Total", total_usuarios)
     st.sidebar.metric("✅ Aprovados", usuarios_aprovados)
     st.sidebar.metric("⏳ Pendentes", usuarios_pendentes)
-    
-    # Botões para exportar/importar dados
-    col1, col2 = st.sidebar.columns(2)
-    
-    with col1:
-        if st.button("📤 Exportar", help="Exportar dados dos usuários"):
-            usuarios_json = json.dumps(usuarios, indent=2, ensure_ascii=False)
-            st.download_button(
-                label="Baixar usuarios.json",
-                data=usuarios_json,
-                file_name="usuarios.json",
-                mime="application/json"
-            )
-    
-    with col2:
-        uploaded_file = st.file_uploader(
-            "📥 Importar", 
-            type=['json'],
-            help="Importar dados dos usuários",
-            key="import_usuarios"
-        )
-        
-        if uploaded_file is not None:
-            try:
-                usuarios_importados = json.load(uploaded_file)
-                st.session_state.usuarios = usuarios_importados
-                st.success("✅ Dados importados com sucesso!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Erro ao importar: {str(e)}")
-    
-    # Backup automático
-    if st.sidebar.button("🔄 Backup Automático", help="Criar backup dos dados atuais"):
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_data = json.dumps(usuarios, indent=2, ensure_ascii=False)
-        st.download_button(
-            label=f"Baixar backup_{timestamp}.json",
-            data=backup_data,
-            file_name=f"backup_usuarios_{timestamp}.json",
-            mime="application/json"
-        )
-    
-    # Histórico de mudanças
-    if 'historico_mudancas' not in st.session_state:
-        st.session_state.historico_mudancas = []
-    
-    with st.sidebar.expander("📋 Histórico de Mudanças"):
-        if st.session_state.historico_mudancas:
-            for i, mudanca in enumerate(reversed(st.session_state.historico_mudancas[-10:])):
-                st.write(f"**{mudanca['timestamp']}:** {mudanca['acao']}")
-        else:
-            st.write("Nenhuma mudança registrada ainda.")
 
     with st.sidebar.expander("Gerenciar Usuários"):
         st.write("**Adicionar novo usuário:**")
@@ -288,28 +164,12 @@ if eh_administrador():
                             # Atualizar session_state
                             st.session_state.usuarios = usuarios
                             
-                            # Registrar mudança no histórico
-                            st.session_state.historico_mudancas.append({
-                                'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                                'acao': f"Usuário '{novo_usuario}' cadastrado"
-                            })
-                            
-                            # Tentar salvar no arquivo local
+                            # Salvar dados
                             try:
                                 salvar_usuarios(usuarios)
-                                st.info("💾 Dados salvos no arquivo local")
+                                st.success("💾 Dados salvos com sucesso!")
                             except Exception as save_error:
-                                st.warning(f"⚠️ Erro ao salvar localmente: {str(save_error)}")
-                            
-                            # Tentar salvar no GitHub
-                            try:
-                                sucesso_github, mensagem_github = salvar_no_github(usuarios)
-                                if sucesso_github:
-                                    st.success("🚀 Dados salvos no GitHub!")
-                                else:
-                                    st.warning(f"⚠️ Erro ao salvar no GitHub: {mensagem_github}")
-                            except Exception as github_error:
-                                st.warning(f"⚠️ Erro ao conectar com GitHub: {str(github_error)}")
+                                st.warning(f"⚠️ Erro ao salvar: {str(save_error)}")
                             
                             st.success(f"✅ Usuário '{novo_usuario}' cadastrado com "
                                        f"sucesso!")
@@ -363,27 +223,12 @@ if eh_administrador():
                         usuarios[usuario]['aprovado_em'] = datetime.now().isoformat()
                         st.session_state.usuarios = usuarios
                         
-                        # Registrar mudança no histórico
-                        st.session_state.historico_mudancas.append({
-                            'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                            'acao': f"Usuário '{usuario}' aprovado"
-                        })
-                        
-                        # Tentar salvar localmente
+                        # Salvar dados
                         try:
                             salvar_usuarios(usuarios)
+                            st.success("💾 Dados salvos com sucesso!")
                         except Exception as save_error:
-                            st.warning(f"⚠️ Erro ao salvar localmente: {str(save_error)}")
-                        
-                        # Tentar salvar no GitHub
-                        try:
-                            sucesso_github, mensagem_github = salvar_no_github(usuarios)
-                            if sucesso_github:
-                                st.success("🚀 Dados salvos no GitHub!")
-                            else:
-                                st.warning(f"⚠️ Erro ao salvar no GitHub: {mensagem_github}")
-                        except Exception as github_error:
-                            st.warning(f"⚠️ Erro ao conectar com GitHub: {str(github_error)}")
+                            st.warning(f"⚠️ Erro ao salvar: {str(save_error)}")
                         
                         st.success(f"✅ Usuário '{usuario}' aprovado!")
                         st.rerun()
@@ -394,27 +239,12 @@ if eh_administrador():
                         del usuarios[usuario]
                         st.session_state.usuarios = usuarios
                         
-                        # Registrar mudança no histórico
-                        st.session_state.historico_mudancas.append({
-                            'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                            'acao': f"Usuário '{usuario}' rejeitado/removido"
-                        })
-                        
-                        # Tentar salvar localmente
+                        # Salvar dados
                         try:
                             salvar_usuarios(usuarios)
+                            st.success("💾 Dados salvos com sucesso!")
                         except Exception as save_error:
-                            st.warning(f"⚠️ Erro ao salvar localmente: {str(save_error)}")
-                        
-                        # Tentar salvar no GitHub
-                        try:
-                            sucesso_github, mensagem_github = salvar_no_github(usuarios)
-                            if sucesso_github:
-                                st.success("🚀 Dados salvos no GitHub!")
-                            else:
-                                st.warning(f"⚠️ Erro ao salvar no GitHub: {mensagem_github}")
-                        except Exception as github_error:
-                            st.warning(f"⚠️ Erro ao conectar com GitHub: {str(github_error)}")
+                            st.warning(f"⚠️ Erro ao salvar: {str(save_error)}")
                         
                         st.success(f"❌ Usuário '{usuario}' removido!")
                         st.rerun()
@@ -448,27 +278,12 @@ if eh_administrador():
                         del usuarios[usuario]
                         st.session_state.usuarios = usuarios
                         
-                        # Registrar mudança no histórico
-                        st.session_state.historico_mudancas.append({
-                            'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                            'acao': f"Usuário '{usuario}' excluído"
-                        })
-                        
-                        # Tentar salvar localmente
+                        # Salvar dados
                         try:
                             salvar_usuarios(usuarios)
+                            st.success("💾 Dados salvos com sucesso!")
                         except Exception as save_error:
-                            st.warning(f"⚠️ Erro ao salvar localmente: {str(save_error)}")
-                        
-                        # Tentar salvar no GitHub
-                        try:
-                            sucesso_github, mensagem_github = salvar_no_github(usuarios)
-                            if sucesso_github:
-                                st.success("🚀 Dados salvos no GitHub!")
-                            else:
-                                st.warning(f"⚠️ Erro ao salvar no GitHub: {mensagem_github}")
-                        except Exception as github_error:
-                            st.warning(f"⚠️ Erro ao conectar com GitHub: {str(github_error)}")
+                            st.warning(f"⚠️ Erro ao salvar: {str(save_error)}")
                         
                         st.success(f"✅ Usuário '{usuario}' excluído!")
                         st.rerun()

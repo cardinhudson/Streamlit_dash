@@ -10,5 +10,11 @@
     "data_criacao": "2025-09-08T21:54:07.496772",
     "status": "aprovado",
     "aprovado_em": "2025-09-08T22:03:52.672683"
+  },
+  "joao": {
+    "senha": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+    "data_criacao": "2025-09-09T19:12:24.792174",
+    "status": "aprovado",
+    "aprovado_em": "2025-09-09T19:12:42.865279"
   }
 }

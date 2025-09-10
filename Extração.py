@@ -2,9 +2,9 @@
 import os
 import pandas as pd
 
-# Caminho da pasta com os arquivos
-pasta = r"C:\Users\u235107\Stellantis\GEIB - GEIB\Partagei_2025\1 - SÍNTESE\11 - SAPIENS\02 - Extrações\KE5Z"
 
+# criar um caminho para esta pasta para qualquer usuario C:\Users\u235107\Stellantis\GEIB - GEIB\Partagei_2025\1 - SÍNTESE\11 - SAPIENS\02 - Extrações\KE5Z"
+pasta = os.path.join(os.path.expanduser("~"), "Stellantis", "GEIB - GEIB", "Partagei_2025", "1 - SÍNTESE", "11 - SAPIENS", "02 - Extrações", "KE5Z")
 
 # Lista para armazenar os DataFrames
 dataframes = []
@@ -80,8 +80,9 @@ print(len(df_total))
 
 print(df_total.head(10))  # Exibir as primeiras linhas do DataFrame total
 
-# Caminho da pasta com os arquivos .txt
-pasta_ksbb = r"C:\Users\u235107\Stellantis\GEIB - GEIB\Partagei_2025\1 - SÍNTESE\11 - SAPIENS\02 - Extrações\KSBB"
+
+# criar um caminho para esta pasta para qualquer usuario C:\Users\u235107\Stellantis\GEIB - GEIB\Partagei_2025\1 - SÍNTESE\11 - SAPIENS\02 - Extrações\KSBB"
+pasta_ksbb = os.path.join(os.path.expanduser("~"), "Stellantis", "GEIB - GEIB", "Partagei_2025", "1 - SÍNTESE", "11 - SAPIENS", "02 - Extrações", "KSBB")
 
 # Lista para armazenar os DataFrames
 dataframes_ksbb = []
