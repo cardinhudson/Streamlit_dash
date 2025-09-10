@@ -361,15 +361,16 @@ st.subheader("Tabela Filtrada")
 st.dataframe(df_filtrado)
 
 # Botão para download da tabela filtrada
-excel_data_filtrada = exportar_excel(df_filtrado, 'KE5Z_tabela_filtrada.xlsx')
-st.download_button(
-    label="📥 Baixar Tabela Filtrada (Excel)",
-    data=excel_data_filtrada,
-    file_name='KE5Z_tabela_filtrada.xlsx',
-    mime='application/vnd.openxmlformats-officedocument.'
-         'spreadsheetml.sheet',
-    use_container_width=True
-)
+if st.button("📥 Baixar Tabela Filtrada (Excel)", use_container_width=True):
+    with st.spinner("Gerando arquivo..."):
+        excel_data_filtrada = exportar_excel(df_filtrado, 'KE5Z_tabela_filtrada.xlsx')
+        
+        # Forçar download usando JavaScript
+        import base64
+        b64 = base64.b64encode(excel_data_filtrada).decode()
+        href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="KE5Z_tabela_filtrada.xlsx">💾 Clique aqui para baixar</a>'
+        st.markdown(href, unsafe_allow_html=True)
+        st.success("✅ Arquivo gerado! Clique no link acima para baixar.")
 
 
 # Criar uma tabela com a soma dos valores por Type 05, Type 06 e Type 07
@@ -401,15 +402,16 @@ styled_df = soma_por_type.style.format({'Valor': 'R$ {:,.2f}'}).applymap(
 st.dataframe(styled_df)
 
 # Botão para download da tabela de soma
-excel_data_soma = exportar_excel(soma_por_type, 'KE5Z_soma_por_type.xlsx')
-st.download_button(
-    label="📥 Baixar Soma por Type (Excel)",
-    data=excel_data_soma,
-    file_name='KE5Z_soma_por_type.xlsx',
-    mime='application/vnd.openxmlformats-officedocument.'
-         'spreadsheetml.sheet',
-    use_container_width=True
-)
+if st.button("📥 Baixar Soma por Type (Excel)", use_container_width=True):
+    with st.spinner("Gerando arquivo..."):
+        excel_data_soma = exportar_excel(soma_por_type, 'KE5Z_soma_por_type.xlsx')
+        
+        # Forçar download usando JavaScript
+        import base64
+        b64 = base64.b64encode(excel_data_soma).decode()
+        href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="KE5Z_soma_por_type.xlsx">💾 Clique aqui para baixar</a>'
+        st.markdown(href, unsafe_allow_html=True)
+        st.success("✅ Arquivo gerado! Clique no link acima para baixar.")
 
 # %%
 # Criar um gráfico de barras para a soma dos valores por 'Type 05', 'Type 06' e 'Type 07'
