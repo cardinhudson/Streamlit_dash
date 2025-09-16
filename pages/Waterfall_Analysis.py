@@ -203,8 +203,8 @@ class WaterfallAnalyzer:
             x=labels,
             y=y_vals,
             connector={"line": {"color": "rgb(63, 63, 63)"}},
-            increasing={"marker": {"color": "#2E8B57"}},
-            decreasing={"marker": {"color": "#DC143C"}},
+            increasing={"marker": {"color": "#e74c3c"}},  # Vermelho para aumentos
+            decreasing={"marker": {"color": "#27ae60"}},  # Verde para diminuições
             totals={"marker": {"color": "#4682B4"}}
         ))
         
@@ -440,8 +440,8 @@ else:
         x=labels_seq,
         y=values_seq,
         connector={"line": {"color": "rgb(63, 63, 63)"}},
-        increasing={"marker": {"color": "#2E8B57"}},
-        decreasing={"marker": {"color": "#DC143C"}},
+        increasing={"marker": {"color": "#e74c3c"}},  # Vermelho para aumentos
+        decreasing={"marker": {"color": "#27ae60"}},  # Verde para diminuições
         totals={"marker": {"color": "#4682B4"}},
         text=text_seq,
         textposition="outside"
@@ -528,8 +528,8 @@ with col1:
 with col2:
     st.markdown("""
     **📊 Como interpretar:**
-    - 🟢 **Verde**: Aumentos nos valores
-    - 🔴 **Vermelho**: Diminuições nos valores
+    - 🟢 **Verde**: Diminuições nos valores
+    - 🔴 **Vermelho**: Aumentos nos valores
     - 🔵 **Azul**: Valores totais/finais
     - 📈 **Conectores**: Mostram a progressão
     """)

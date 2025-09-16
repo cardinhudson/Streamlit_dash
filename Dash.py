@@ -325,11 +325,7 @@ else:
 grafico_barras = alt.Chart(df_filtrado).mark_bar().encode(
     x=alt.X('Período:N', title='Período'),
     y=alt.Y('sum(Valor):Q', title='Soma do Valor'),
-    color=alt.condition(
-        alt.datum['sum(Valor)'] > 0,
-        alt.value('#e74c3c'),  # Vermelho moderno para valores positivos (piores despesas)
-        alt.value('#27ae60')   # Verde moderno para valores negativos (melhores)
-    ),
+    color=alt.Color('sum(Valor):Q', title='Valor', scale=alt.Scale(scheme='redyellowgreen', reverse=True)),
     tooltip=['Período:N', 'sum(Valor):Q']
 ).properties(
     title='Soma do Valor por Período'
@@ -340,7 +336,7 @@ rotulos = grafico_barras.mark_text(
     align='center',
     baseline='middle',
     dy=-10,  # Ajuste vertical
-    color='white',
+    color='black',
     fontSize=12
 ).encode(
     text=alt.Text('sum(Valor):Q', format=',.2f')
@@ -429,14 +425,10 @@ if st.button("📥 Baixar Soma por Type (Excel)", use_container_width=True):
 # %%
 # Criar um gráfico de barras para a soma dos valores por 'Type 05', 'Type 06' e 'Type 07'
 # classificado em ordem decrescente com cores baseadas nos valores
-grafico_barras = alt.Chart(df_filtrado).mark_bar().encode(  # Cores baseadas nos valores
+grafico_barras = alt.Chart(df_filtrado).mark_bar().encode(  # Degradê contínuo
     x=alt.X('Type 05:N', title='Type 05', sort=alt.SortField(field='sum(Valor):Q', order='descending')),
     y=alt.Y('sum(Valor):Q', title='Soma do Valor'),
-    color=alt.condition(
-        alt.datum['sum(Valor)'] > 0,
-        alt.value('#e74c3c'),  # Vermelho moderno para valores positivos (piores despesas)
-        alt.value('#27ae60')   # Verde moderno para valores negativos (melhores)
-    ),
+    color=alt.Color('sum(Valor):Q', title='Valor', scale=alt.Scale(scheme='redyellowgreen', reverse=True)),
     tooltip=['Type 05:N', 'sum(Valor):Q']  # Tooltip para exibir informações
 ).properties(
     title='Soma do Valor por Type 05'
@@ -447,7 +439,7 @@ rotulos = grafico_barras.mark_text(
     align='center',
     baseline='middle',
     dy=-10,  # Ajuste vertical
-    color='white',
+    color='black',
     fontSize=12
 ).encode(
     text=alt.Text('sum(Valor):Q', format=',.2f')
@@ -464,14 +456,10 @@ df_type06_agg = df_filtrado.groupby('Type 06')['Valor'].sum().reset_index()
 df_type06_agg = df_type06_agg.sort_values('Valor', ascending=False)
 
 # Gráfico de barras para a soma dos valores por 'Type 06' em ordem decrescente com cores baseadas nos valores
-grafico_barras = alt.Chart(df_type06_agg).mark_bar().encode(  # Cores baseadas nos valores
+grafico_barras = alt.Chart(df_type06_agg).mark_bar().encode(  # Degradê contínuo
     x=alt.X('Type 06:N', title='Type 06', sort=None),  # Sem ordenação automática, dados já ordenados
     y=alt.Y('Valor:Q', title='Soma do Valor'),
-    color=alt.condition(
-        alt.datum['Valor'] > 0,
-        alt.value('#e74c3c'),  # Vermelho moderno para valores positivos (piores despesas)
-        alt.value('#27ae60')   # Verde moderno para valores negativos (melhores)
-    ),
+    color=alt.Color('Valor:Q', title='Valor', scale=alt.Scale(scheme='redyellowgreen', reverse=True)),
     tooltip=['Type 06:N', 'Valor:Q']  # Tooltip para exibir informações
 ).properties(
     title='Soma do Valor por Type 06'
@@ -482,7 +470,7 @@ rotulos = grafico_barras.mark_text(
     align='center',
     baseline='middle',
     dy=-10,  # Ajuste vertical
-    color='white',
+    color='black',
     fontSize=12
 ).encode(
     text=alt.Text('Valor:Q', format=',.2f')  # Formatar os valores com duas casas decimais
@@ -648,7 +636,7 @@ class AIAssistant:
             elif 'type_06' in analysis['entities']:
                 query += "`Type 06`, SUM(Valor) as total_valor FROM df GROUP BY `Type 06` ORDER BY total_valor DESC"
             elif 'fornecedor' in analysis['entities']:
-                query += "`Nome do fornecedor`, SUM(Valor) as total_valor FROM df GROUP BY `Nome do fornecedor` ORDER BY total_valor DESC"
+                query += "Fornecedor, SUM(Valor) as total_valor FROM df GROUP BY Fornecedor ORDER BY total_valor DESC"
             elif 'usi' in analysis['entities']:
                 query += "USI, SUM(Valor) as total_valor FROM df GROUP BY USI ORDER BY total_valor DESC"
             elif 'periodo' in analysis['entities']:
@@ -680,9 +668,9 @@ class AIAssistant:
                 elif '`Type 06`' in query:
                     result = self.df.groupby('Type 06')['Valor'].sum().reset_index()
                     result.columns = ['Type 06', 'total_valor']
-                elif '`Nome do fornecedor`' in query:
-                    result = self.df.groupby('Nome do fornecedor')['Valor'].sum().reset_index()
-                    result.columns = ['Nome do fornecedor', 'total_valor']
+                elif 'Fornecedor' in query:
+                    result = self.df.groupby('Fornecedor')['Valor'].sum().reset_index()
+                    result.columns = ['Fornecedor', 'total_valor']
                 elif 'USI' in query:
                     result = self.df.groupby('USI')['Valor'].sum().reset_index()
                     result.columns = ['USI', 'total_valor']
@@ -719,15 +707,12 @@ class AIAssistant:
                 col1 = data.columns[0]
                 col2 = data.columns[1]
                 
-                # Criar gráfico de barras com Altair e cores baseadas nos valores
+                # Criar gráfico de barras com Altair e escala de cores em degradê
+                # Regra: valores menores (melhores despesas) = verde; maiores (piores) = vermelho
                 chart = alt.Chart(data).mark_bar().encode(
                     x=alt.X(f'{col1}:N', title=col1, sort=alt.SortField(field=col2, order='descending')),
                     y=alt.Y(f'{col2}:Q', title='Valor Total (R$)'),
-                    color=alt.condition(
-                        alt.datum[col2] > 0,
-                        alt.value('#d32f2f'),  # Vermelho suave para valores positivos (piores despesas)
-                        alt.value('#388e3c')   # Verde suave para valores negativos (melhores)
-                    ),
+                    color=alt.Color(f'{col2}:Q', title='Valor', scale=alt.Scale(range=['#27ae60', '#e74c3c'])),
                     tooltip=[f'{col1}:N', f'{col2}:Q']
                 ).properties(
                     title=f"Ranking por {col1}"
@@ -738,7 +723,7 @@ class AIAssistant:
                     align='center',
                     baseline='bottom',
                     dy=-5,
-                    color='white',
+                    color='black',
                     fontSize=12,
                     fontWeight='bold'
                 ).encode(
@@ -766,6 +751,7 @@ class AIAssistant:
                 col2 = data.columns[1]
                 
                 # Criar gráfico waterfall com Plotly
+                # Verde = diminuição (valores negativos), Vermelho = aumento (valores positivos)
                 fig = go.Figure(go.Waterfall(
                     name="Waterfall",
                     orientation="v",
@@ -773,6 +759,9 @@ class AIAssistant:
                     x=data[col1].tolist(),
                     y=data[col2].tolist(),
                     connector={"line": {"color": "rgb(63, 63, 63)"}},
+                    increasing={"marker": {"color": "#e74c3c"}},  # Vermelho para aumentos
+                    decreasing={"marker": {"color": "#27ae60"}},  # Verde para diminuições
+                    totals={"marker": {"color": "#3498db"}}       # Azul para totais
                 ))
                 fig.update_layout(
                     title="Análise Waterfall - Variações por Período",

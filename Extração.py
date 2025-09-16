@@ -329,6 +329,35 @@ df_total = df_total.where(pd.notnull(df_total), None)
 print("Tipos de dados após limpeza:")
 print(df_total.dtypes)
 
+
+# %% Salvar arquivo para extração PBI
+# ler arquivo fornecedores e desconsiderar as 3 primeiras linhas
+arquivo_fornecedores = r"Fornecedores.xlsx"
+df_fornecedores = pd.read_excel(arquivo_fornecedores, skiprows=3)
+# remover linhas duplicadas pela coluna Fornecedor
+df_fornecedores = df_fornecedores.drop_duplicates(subset=['Fornecedor'])
+# mudar o nome da coluna Fornecedor para Fornec.
+df_fornecedores.rename(columns={'Fornecedor': 'Fornec.'}, inplace=True)
+
+# mudar a coluna fornec. para string
+df_fornecedores['Fornec.'] = df_fornecedores['Fornec.'].astype(str)
+
+# merge o df_total com df_fornecedores pela coluna Fornec. retornando a coluna Fornecedor
+df_total = pd.merge(
+    df_total,
+    df_fornecedores[['Fornec.', 'Nome do fornecedor']],
+    on='Fornec.',
+    how='left',
+)
+
+# Excluir a coluna Fornecedor
+df_total.drop(columns=['Fornecedor'], inplace=True)
+# mudar o nome da coluna Nome do fornecedor para Fornecedor
+df_total.rename(columns={'Nome do fornecedor': 'Fornecedor'}, inplace=True)
+
+
+
+
 # gerar um arquivo parquet do df_total atualizado
 pasta_parquet = r"KE5Z"
 caminho_saida_atualizado = os.path.join(pasta_parquet, 'KE5Z.parquet')
@@ -341,4 +370,35 @@ df_total.head(10000).to_excel(caminho_saida_excel, index=False)
 print(f"Arquivo Excel salvo em: \n {caminho_saida_excel}")
 #
 #
+# %%
+# Salvar arquivo em excel com a coluna 'USI' filtado em 'Veículos', 'TC Ext' e 'LC'
+#  localizar o caminho em qualquer PC Stellantis\Hebdo FGx - Documents\Overheads\PBI 2025\09 - Sapiens\Extração PBI
+# Monta o caminho absoluto a partir do diretório home do usuário, garantindo compatibilidade em qualquer PC
+caminho_saida_excel_usi = os.path.join(
+    os.path.expanduser("~"),
+    "Stellantis",
+    "Hebdo FGx - Documents",
+    "Overheads",
+    "PBI 2025",
+    "09 - Sapiens",
+    "Extração PBI"
+)
+caminho_saida_excel_usi = os.path.join(caminho_saida_excel_usi, 'KE5Z_veiculos.xlsx')
+df_total[df_total['USI'].isin(['Veículos', 'TC Ext', 'LC'])].to_excel(caminho_saida_excel_usi, index=False)
+print(f"Arquivo Excel salvo em: \n {caminho_saida_excel_usi}")
 #
+#
+# %%
+# Salvar arquivo em excel com a coluna 'USI' filtrado em 'PWT'
+caminho_saida_excel_usi = os.path.join(
+    os.path.expanduser("~"),
+    "Stellantis",
+    "Hebdo FGx - Documents",
+    "Overheads",
+    "PBI 2025",
+    "09 - Sapiens",
+    "Extração PBI"
+)
+caminho_saida_excel_usi = os.path.join(caminho_saida_excel_usi, 'KE5Z_pwt.xlsx')
+df_total[df_total['USI'].isin(['PWT'])].to_excel(caminho_saida_excel_usi, index=False)
+print(f"Arquivo Excel salvo em: \n {caminho_saida_excel_usi}")
