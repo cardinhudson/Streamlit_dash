@@ -63,7 +63,7 @@ for arquivo in os.listdir(pasta):
         # mudar o nome da coluna Doc.ref. pelo seu índice
         df.rename(columns={df.columns[9]: 'doc.ref'}, inplace=True)
         print(len(df))
-        
+
         # Remover espaços em branco dos nomes das colunas
         df.columns = df.columns.str.strip()
         # Filtrar a coluna 'Ano' com valores não nulos e diferentes de 0
@@ -96,7 +96,7 @@ for arquivo in os.listdir(pasta):
         # Imprimir o valor total da coluna 'Em MCont.'
         total_em_mcont = df['Em MCont.'].sum()
         print(f"Total Em MCont. em {arquivo}: {total_em_mcont}")
-        
+
 
 # Concatenar todos os DataFrames em um único
 if dataframes:
@@ -206,7 +206,7 @@ for arquivo in os.listdir(pasta_ksbb):
             skiprows=3,
             skipfooter=1,
         )
-        
+
         # remover espaços em branco dos nomes das colunas
         df_ksbb.columns = df_ksbb.columns.str.strip()
 
@@ -214,10 +214,10 @@ for arquivo in os.listdir(pasta_ksbb):
         df_ksbb = df_ksbb[
             df_ksbb['Material'].notna() & (df_ksbb['Material'] != 0)
         ]
-        
+
         # remover as linhas duplicadas pela coluna Material
         df_ksbb = df_ksbb.drop_duplicates(subset=['Material'])
-                
+
         # Adicionar o DataFrame à lista
         dataframes_ksbb.append(df_ksbb)
 
@@ -243,7 +243,9 @@ if not df_total.empty and not df_ksbb.empty and 'Material' in df_total.columns:
     )
 
 # renomear a coluna Texto breve material para Descrição Material
-df_total = df_total.rename(columns={'Texto breve material': 'Descrição Material'})
+df_total = df_total.rename(
+    columns={'Texto breve material': 'Descrição Material'}
+)
 
 # exibir as 10 primeiras linhas do df_total e as colunas de Material, Descrição Material
 if 'Material' in df_total.columns and 'Descrição Material' in df_total.columns:
@@ -252,7 +254,11 @@ if 'Material' in df_total.columns and 'Descrição Material' in df_total.columns
 # se a descrição do material nao for nula substituir o valor da coluna Texto pelo valor da Descrição Material
 if 'Texto' in df_total.columns and 'Descrição Material' in df_total.columns:
     df_total['Texto'] = df_total.apply(
-        lambda row: row['Descrição Material'] if pd.notnull(row['Descrição Material']) else row['Texto'],
+        lambda row: (
+            row['Descrição Material']
+            if pd.notnull(row['Descrição Material'])
+            else row['Texto']
+        ),
         axis=1,
     )
 
@@ -295,7 +301,10 @@ df_total['USI'] = df_total['USI'].fillna('Others')
 # Exibir as 10 primeiras linhas do df_total e as colunas de Nº conta, Type 07, Type 06, Type 05, Centro cst, Oficina e USI
 print(
     df_total[
-        ['Nº conta', 'Type 07', 'Type 06', 'Type 05', 'Centro cst', 'Oficina', 'USI']
+        [
+            'Nº conta', 'Type 07', 'Type 06', 'Type 05',
+            'Centro cst', 'Oficina', 'USI'
+        ]
     ].head(10)
 )
 

@@ -2,32 +2,31 @@
 
 Dashboard interativo para visualização de dados TC - KE5Z com sistema de autenticação.
 
-## 🚀 Configuração do Ambiente
+## 🚀 COMO USAR (Para Colaboradores)
 
-### Pré-requisitos
-- Python 3.8 ou superior
-- Git (opcional)
+### ⚡ Configuração Super Rápida
 
-### Instalação Rápida
+1. **Baixe o projeto** (pasta completa)
+2. **Execute um destes arquivos:**
+   - `CONFIGURAR_RAPIDO.bat` - Configuração automática completa
+   - `abrir_dash.bat` - Abre diretamente (instala automaticamente se necessário)
+   - `COMO_USAR.bat` - Instruções detalhadas
 
-1. **Clone ou baixe o repositório**
-   ```bash
-   git clone <url-do-repositorio>
-   cd Streamlit_dash
-   ```
+### 📋 Pré-requisitos
+- **Python 3.8+** (baixe de [python.org](https://python.org))
+- **Windows** (recomendado)
 
-2. **Instale as dependências automaticamente**
-   - **Windows**: Execute `instalar_dependencias.bat`
-   - **Linux/Mac**: Execute os comandos abaixo:
-     ```bash
-     python -m venv venv
-     source venv/bin/activate
-     pip install -r requirements.txt
-     ```
+### 🔧 Instalação Manual (se necessário)
 
-3. **Ative o ambiente virtual**
-   - **Windows**: Execute `ativar_venv.bat`
-   - **Linux/Mac**: Execute `source venv/bin/activate`
+1. **Instale Python 3.8+**
+   - Acesse: https://python.org/downloads
+   - Baixe e instale Python 3.8 ou superior
+   - **IMPORTANTE**: Marque "Add Python to PATH" durante a instalação
+
+2. **Execute o projeto**
+   - Execute `abrir_dash.bat`
+   - Aguarde a instalação automática
+   - O dashboard abrirá no navegador
 
 4. **Execute o dashboard**
    ```bash

@@ -67,8 +67,8 @@ df_total = pd.read_parquet(arquivo_parquet)
 # Exibir as primeiras linhas do DataFrame para verificar os dados
 print(df_total.head())
 
-# Filtrar o df_total com a coluna 'USI' que não seja 'Others' e que não seja nula
-df_total = df_total[df_total['USI'].notna() & (df_total['USI'] != 'Others')]
+# Filtrar o df_total com a coluna 'USI' que não seja nula (incluindo 'Others')
+df_total = df_total[df_total['USI'].notna()]
 
 # Header com informações do usuário e botão de logout
 col1, col2, col3 = st.columns([2, 1, 1])
@@ -84,7 +84,7 @@ st.markdown("---")
 # Filtros para o DataFrame
 st.sidebar.title("Filtros")
 
-# Filtro 1: USINA - Filtrar somente a coluna 'USI' que não são 'Others' e trazer todas as opções inclusive as vazias ou na. Selecione a opção "Todos" para todas as USINAS
+# Filtro 1: USINA - Incluir todas as opções de USI (incluindo 'Others'). Selecione a opção "Todos" para todas as USINAS
 usina_opcoes = ["Todos"] + df_total['USI'].dropna().unique().tolist()
 usina_selecionada = st.sidebar.multiselect("Selecione a USINA:", usina_opcoes, default=["Todos"])
 
@@ -321,10 +321,15 @@ else:
 
 # %%
 
-# Criar um gráfico de barras para a soma dos valores por 'Período' com uma única cor
-grafico_barras = alt.Chart(df_filtrado).mark_bar(color='steelblue').encode(
+# Criar um gráfico de barras para a soma dos valores por 'Período' com cores baseadas nos valores
+grafico_barras = alt.Chart(df_filtrado).mark_bar().encode(
     x=alt.X('Período:N', title='Período'),
     y=alt.Y('sum(Valor):Q', title='Soma do Valor'),
+    color=alt.condition(
+        alt.datum['sum(Valor)'] > 0,
+        alt.value('#e74c3c'),  # Vermelho moderno para valores positivos (piores despesas)
+        alt.value('#27ae60')   # Verde moderno para valores negativos (melhores)
+    ),
     tooltip=['Período:N', 'sum(Valor):Q']
 ).properties(
     title='Soma do Valor por Período'
@@ -351,7 +356,7 @@ st.altair_chart(grafico_completo, use_container_width=True)
 # Exibir 'tabela filtrada com linhas sendo a USI e as colunas sendo o 'Período' e os valores sendo a soma do 'Valor' e incluir valor do total na última linha e coluna
 df_pivot = df_filtrado.pivot_table(index='USI', columns='Período', values='Valor', aggfunc='sum', margins=True, margins_name='Total', fill_value=0)
 st.subheader("Tabela Dinâmica - Soma do Valor por USI e Período")
-st.dataframe(df_pivot.style.format('R$ {:,.2f}').applymap(lambda x: 'color: red;' if x < 0 else 'color: green;' if x > 0 else '', subset=pd.IndexSlice[:, :]))  # Formatar como moeda e vermelho negativo e azul positivo
+st.dataframe(df_pivot.style.format('R$ {:,.2f}').applymap(lambda x: 'color: #e74c3c; font-weight: bold;' if x < 0 else 'color: #27ae60; font-weight: bold;' if x > 0 else '', subset=pd.IndexSlice[:, :]))  # Formatar como moeda com cores modernas
 
 # Função para exportar uma única tabela para Excel
 def exportar_excel(df, nome_arquivo):
@@ -399,9 +404,9 @@ st.subheader("Soma dos Valores por Type 05, Type 06 e Type 07 (com Total)")
 # Formatar dataframe com cores
 def colorir_valores(val):
     if isinstance(val, (int, float)) and val < 0:
-        return 'color: red;'
+        return 'color: #e74c3c; font-weight: bold;'
     elif isinstance(val, (int, float)) and val > 0:
-        return 'color: green;' 
+        return 'color: #27ae60; font-weight: bold;' 
     return '' 
 
 
@@ -423,10 +428,15 @@ if st.button("📥 Baixar Soma por Type (Excel)", use_container_width=True):
 
 # %%
 # Criar um gráfico de barras para a soma dos valores por 'Type 05', 'Type 06' e 'Type 07'
-# classificado em ordem decrescente
-grafico_barras = alt.Chart(df_filtrado).mark_bar(color='steelblue').encode(  # Define uma cor fixa para as barras
+# classificado em ordem decrescente com cores baseadas nos valores
+grafico_barras = alt.Chart(df_filtrado).mark_bar().encode(  # Cores baseadas nos valores
     x=alt.X('Type 05:N', title='Type 05', sort=alt.SortField(field='sum(Valor):Q', order='descending')),
     y=alt.Y('sum(Valor):Q', title='Soma do Valor'),
+    color=alt.condition(
+        alt.datum['sum(Valor)'] > 0,
+        alt.value('#e74c3c'),  # Vermelho moderno para valores positivos (piores despesas)
+        alt.value('#27ae60')   # Verde moderno para valores negativos (melhores)
+    ),
     tooltip=['Type 05:N', 'sum(Valor):Q']  # Tooltip para exibir informações
 ).properties(
     title='Soma do Valor por Type 05'
@@ -453,10 +463,15 @@ st.altair_chart(grafico_completo, use_container_width=True)
 df_type06_agg = df_filtrado.groupby('Type 06')['Valor'].sum().reset_index()
 df_type06_agg = df_type06_agg.sort_values('Valor', ascending=False)
 
-# Gráfico de barras para a soma dos valores por 'Type 06' em ordem decrescente
-grafico_barras = alt.Chart(df_type06_agg).mark_bar(color='steelblue').encode(  # Define uma cor fixa para as barras
+# Gráfico de barras para a soma dos valores por 'Type 06' em ordem decrescente com cores baseadas nos valores
+grafico_barras = alt.Chart(df_type06_agg).mark_bar().encode(  # Cores baseadas nos valores
     x=alt.X('Type 06:N', title='Type 06', sort=None),  # Sem ordenação automática, dados já ordenados
     y=alt.Y('Valor:Q', title='Soma do Valor'),
+    color=alt.condition(
+        alt.datum['Valor'] > 0,
+        alt.value('#e74c3c'),  # Vermelho moderno para valores positivos (piores despesas)
+        alt.value('#27ae60')   # Verde moderno para valores negativos (melhores)
+    ),
     tooltip=['Type 06:N', 'Valor:Q']  # Tooltip para exibir informações
 ).properties(
     title='Soma do Valor por Type 06'
@@ -704,10 +719,15 @@ class AIAssistant:
                 col1 = data.columns[0]
                 col2 = data.columns[1]
                 
-                # Criar gráfico de barras com Altair
-                chart = alt.Chart(data).mark_bar(color='steelblue').encode(
+                # Criar gráfico de barras com Altair e cores baseadas nos valores
+                chart = alt.Chart(data).mark_bar().encode(
                     x=alt.X(f'{col1}:N', title=col1, sort=alt.SortField(field=col2, order='descending')),
                     y=alt.Y(f'{col2}:Q', title='Valor Total (R$)'),
+                    color=alt.condition(
+                        alt.datum[col2] > 0,
+                        alt.value('#d32f2f'),  # Vermelho suave para valores positivos (piores despesas)
+                        alt.value('#388e3c')   # Verde suave para valores negativos (melhores)
+                    ),
                     tooltip=[f'{col1}:N', f'{col2}:Q']
                 ).properties(
                     title=f"Ranking por {col1}"
@@ -731,7 +751,7 @@ class AIAssistant:
             if len(data.columns) >= 2:
                 col1 = data.columns[0]
                 col2 = data.columns[1]
-                chart = alt.Chart(data).mark_line(point=True, color='steelblue').encode(
+                chart = alt.Chart(data).mark_line(point=True, color='#3498db').encode(
                     x=alt.X(f'{col1}:N', title=col1),
                     y=alt.Y(f'{col2}:Q', title='Valor Total (R$)'),
                     tooltip=[f'{col1}:N', f'{col2}:Q']
