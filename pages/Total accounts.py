@@ -113,6 +113,31 @@ tabela_somada = df_filtrado.pivot_table(index='Nº conta', columns='Período', v
 # Exibir a tabela somada na página com os numeros formatados como moeda brasileira
 tabela_somada = tabela_somada.style.format("R$ {:,.2f}", decimal=",",thousands=".")
 st.dataframe(tabela_somada)
+
+# Função para exportar uma única tabela para Excel
+def exportar_excel(df, nome_arquivo):
+    """Exporta DataFrame para Excel e retorna bytes para download"""
+    from io import BytesIO
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=True, sheet_name='Dados')
+    output.seek(0)
+    return output.getvalue()
+
+# Botão para download da tabela "Total SAP KE5Z - Todas as contas"
+if st.button("📥 Baixar Total SAP KE5Z - Todas as contas (Excel)", use_container_width=True):
+    with st.spinner("Gerando arquivo..."):
+        # Criar a tabela pivot novamente para exportação (sem formatação de estilo)
+        tabela_para_exportar = df_filtrado.pivot_table(index='Nº conta', columns='Período', values='Valor', aggfunc='sum', fill_value=0, margins=True, margins_name='Total')
+        excel_data = exportar_excel(tabela_para_exportar, 'KE5Z_total_contas.xlsx')
+        
+        # Forçar download usando JavaScript
+        import base64
+        b64 = base64.b64encode(excel_data).decode()
+        href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="KE5Z_total_contas.xlsx">💾 Clique aqui para baixar</a>'
+        st.markdown(href, unsafe_allow_html=True)
+        st.success("✅ Arquivo gerado! Clique no link acima para baixar.")
+
 # Exibir o número de linhas e colunas do DataFrame filtrado e a soma do valor total
 st.sidebar.write(f"Número de linhas: {df_filtrado.shape[0]}")
 st.sidebar.write(f"Número de colunas: {df_filtrado.shape[1]}")

@@ -5,8 +5,27 @@ import pandas as pd
 
 # Definir as duas pastas possíveis para KE5Z
 pasta_opcoes = [
-    os.path.join(os.path.expanduser("~"), "Stellantis", "GEIB - General", "GEIB", "Partagei_2025", "1 - SÍNTESE", "11 - SAPIENS", "02 - Extrações", "KE5Z"),
-    os.path.join(os.path.expanduser("~"), "Stellantis", "GEIB - GEIB", "Partagei_2025", "1 - SÍNTESE", "11 - SAPIENS", "02 - Extrações", "KE5Z")
+    os.path.join(
+        os.path.expanduser("~"),
+        "Stellantis",
+        "GEIB - General",
+        "GEIB",
+        "Partagei_2025",
+        "1 - SÍNTESE",
+        "11 - SAPIENS",
+        "02 - Extrações",
+        "KE5Z",
+    ),
+    os.path.join(
+        os.path.expanduser("~"),
+        "Stellantis",
+        "GEIB - GEIB",
+        "Partagei_2025",
+        "1 - SÍNTESE",
+        "11 - SAPIENS",
+        "02 - Extrações",
+        "KE5Z",
+    ),
 ]
 
 # Procurar a pasta que existe
@@ -30,13 +49,16 @@ dataframes = []
 # Iterar sobre todos os arquivos na pasta
 for arquivo in os.listdir(pasta):
     caminho_arquivo = os.path.join(pasta, arquivo)
-    
-    # Verificar se é um arquivo e tem a extensão desejada (exemplo: .txt ou .csv)
+
+    # Verificar se é um arquivo e tem a extensão desejada
     if os.path.isfile(caminho_arquivo) and arquivo.endswith('.txt'):
         print(f"Lendo: {arquivo}")
         print(caminho_arquivo)
         # Ler o arquivo em um DataFrame
-        df = pd.read_csv(caminho_arquivo, sep='\t', skiprows=9, encoding='latin1', engine='python')
+        df = pd.read_csv(
+            caminho_arquivo, sep='\t', skiprows=9,
+            encoding='latin1', engine='python'
+        )
 
         # mudar o nome da coluna Doc.ref. pelo seu índice
         df.rename(columns={df.columns[9]: 'doc.ref'}, inplace=True)
@@ -44,17 +66,25 @@ for arquivo in os.listdir(pasta):
         
         # Remover espaços em branco dos nomes das colunas
         df.columns = df.columns.str.strip()
-        #Filtrar a coluna 'Ano' com valores não nulos e diferentes de 0
+        # Filtrar a coluna 'Ano' com valores não nulos e diferentes de 0
         df = df[df['Ano'].notna() & (df['Ano'] != 0)]
         # Substituir ',' por '.' e remover pontos de separação de milhar
-        df['Em MCont.'] = df['Em MCont.'].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
+        df['Em MCont.'] = (
+            df['Em MCont.']
+            .str.replace('.', '', regex=False)
+            .str.replace(',', '.', regex=False)
+        )
         # Converter a coluna para float, tratando erros
         df['Em MCont.'] = pd.to_numeric(df['Em MCont.'], errors='coerce')
         # Substituir valores NaN por 0 (ou outro valor padrão, se necessário)
         df['Em MCont.'] = df['Em MCont.'].fillna(0)
 
         # Substituir ',' por '.' e remover pontos de separação de milhar
-        df['Qtd.'] = df['Qtd.'].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
+        df['Qtd.'] = (
+            df['Qtd.']
+            .str.replace('.', '', regex=False)
+            .str.replace(',', '.', regex=False)
+        )
         # Converter a coluna para float, tratando erros
         df['Qtd.'] = pd.to_numeric(df['Qtd.'], errors='coerce')
         # Substituir valores NaN por 0 (ou outro valor padrão, se necessário)
@@ -69,12 +99,29 @@ for arquivo in os.listdir(pasta):
         
 
 # Concatenar todos os DataFrames em um único
-df_total = pd.concat(dataframes, ignore_index=True)
+if dataframes:
+    df_total = pd.concat(dataframes, ignore_index=True)
+else:
+    print("AVISO: Nenhum arquivo .txt encontrado em KE5Z.")
+    df_total = pd.DataFrame()
 
 
 # Remover colunas desnecessárias
-colunas_para_remover = ['Unnamed: 0', 'Unnamed: 1', 
-'Unnamed: 4', 'Nº doc.', 'Elem.PEP', 'Obj.custo', 'TD', 'SocPar', 'EmpEm.', 'Empr', 'TMv', 'D/C', 'Imobil.']
+colunas_para_remover = [
+    'Unnamed: 0',
+    'Unnamed: 1',
+    'Unnamed: 4',
+    'Nº doc.',
+    'Elem.PEP',
+    'Obj.custo',
+    'TD',
+    'SocPar',
+    'EmpEm.',
+    'Empr',
+    'TMv',
+    'D/C',
+    'Imobil.',
+]
 df_total.drop(columns=colunas_para_remover, inplace=True, errors='ignore')
 print(df_total.columns)
 
@@ -83,11 +130,11 @@ df_total['Cliente'] = df_total['Cliente'].astype(str)
 
 # imprimir a coluna 'Em MCont.'
 print(df_total['Em MCont.'])
-
-
-
-
-
+#
+#
+#
+#
+#
 # %%
 # Modificar o nome da coluna 'Em MCont.' para 'Valor'
 df_total.rename(columns={'Em MCont.': 'Valor'}, inplace=True)
@@ -101,8 +148,27 @@ print(df_total.head(10))  # Exibir as primeiras linhas do DataFrame total
 
 # Definir as duas pastas possíveis para KSBB
 pasta_ksbb_opcoes = [
-    os.path.join(os.path.expanduser("~"), "Stellantis", "GEIB - General", "GEIB", "Partagei_2025", "1 - SÍNTESE", "11 - SAPIENS", "02 - Extrações", "KSBB"),
-    os.path.join(os.path.expanduser("~"), "Stellantis", "GEIB - GEIB", "Partagei_2025", "1 - SÍNTESE", "11 - SAPIENS", "02 - Extrações", "KSBB")
+    os.path.join(
+        os.path.expanduser("~"),
+        "Stellantis",
+        "GEIB - General",
+        "GEIB",
+        "Partagei_2025",
+        "1 - SÍNTESE",
+        "11 - SAPIENS",
+        "02 - Extrações",
+        "KSBB",
+    ),
+    os.path.join(
+        os.path.expanduser("~"),
+        "Stellantis",
+        "GEIB - GEIB",
+        "Partagei_2025",
+        "1 - SÍNTESE",
+        "11 - SAPIENS",
+        "02 - Extrações",
+        "KSBB",
+    ),
 ]
 
 # Procurar a pasta que existe
@@ -126,20 +192,28 @@ dataframes_ksbb = []
 # Iterar sobre todos os arquivos na pasta
 for arquivo in os.listdir(pasta_ksbb):
     caminho_arquivo = os.path.join(pasta_ksbb, arquivo)
-    
+
     # Verificar se é um arquivo e tem a extensão desejada (.csv)
     if os.path.isfile(caminho_arquivo) and arquivo.endswith('.txt'):
         print(f"Lendo: {arquivo}")
 
         # Ler o arquivo em um DataFrame
-        df_ksbb = pd.read_csv(caminho_arquivo, sep='\t', encoding='latin1', engine='python', skiprows=3, skipfooter=1)
+        df_ksbb = pd.read_csv(
+            caminho_arquivo,
+            sep='\t',
+            encoding='latin1',
+            engine='python',
+            skiprows=3,
+            skipfooter=1,
+        )
         
         # remover espaços em branco dos nomes das colunas
         df_ksbb.columns = df_ksbb.columns.str.strip()
 
-        # Filtrar a coluna Material com não vazias e diferentes de 0 e depois exibi-lás
-
-        df_ksbb = df_ksbb[df_ksbb['Material'].notna() & (df_ksbb['Material'] != 0)]
+        # Filtrar a coluna Material com não vazias e diferentes de 0
+        df_ksbb = df_ksbb[
+            df_ksbb['Material'].notna() & (df_ksbb['Material'] != 0)
+        ]
         
         # remover as linhas duplicadas pela coluna Material
         df_ksbb = df_ksbb.drop_duplicates(subset=['Material'])
@@ -149,22 +223,38 @@ for arquivo in os.listdir(pasta_ksbb):
 
 
 # Concatenar todos os DataFrames em um único e ignorar caso tenha apenas 1
-df_ksbb = pd.concat(dataframes_ksbb, ignore_index=True) if len(dataframes_ksbb) > 1 else dataframes_ksbb[0]
+if len(dataframes_ksbb) > 1:
+    df_ksbb = pd.concat(dataframes_ksbb, ignore_index=True)
+elif len(dataframes_ksbb) == 1:
+    df_ksbb = dataframes_ksbb[0]
+else:
+    df_ksbb = pd.DataFrame()
 
 # remover as linhas duplicadas pela coluna Material
 df_ksbb = df_ksbb.drop_duplicates(subset=['Material'])
 
-# merge o df_total com df_ksbb_total pela coluna Material tranzendo a coluna de texto breve material do df_ksbb_total
-df_total = pd.merge(df_total, df_ksbb[['Material', 'Texto breve material']], on='Material', how='left')
+# merge o df_total com df_ksbb_total pela coluna Material trazendo a coluna de texto breve material do df_ksbb_total
+if not df_total.empty and not df_ksbb.empty and 'Material' in df_total.columns:
+    df_total = pd.merge(
+        df_total,
+        df_ksbb[['Material', 'Texto breve material']],
+        on='Material',
+        how='left',
+    )
 
 # renomear a coluna Texto breve material para Descrição Material
 df_total = df_total.rename(columns={'Texto breve material': 'Descrição Material'})
 
-# exibir as 10 primeiras linhas do df_total e as colunas de Material, Descrição Material e Imobil.
-print(df_total[['Material', 'Descrição Material']].head(10))
+# exibir as 10 primeiras linhas do df_total e as colunas de Material, Descrição Material
+if 'Material' in df_total.columns and 'Descrição Material' in df_total.columns:
+    print(df_total[['Material', 'Descrição Material']].head(10))
 
-# se  a descrição do material nao for nula substituir o valor da coluna Texto pelo valor da Descrição Material
-df_total['Texto'] = df_total.apply(lambda row: row['Descrição Material'] if pd.notnull(row['Descrição Material']) else row['Texto'], axis=1)
+# se a descrição do material nao for nula substituir o valor da coluna Texto pelo valor da Descrição Material
+if 'Texto' in df_total.columns and 'Descrição Material' in df_total.columns:
+    df_total['Texto'] = df_total.apply(
+        lambda row: row['Descrição Material'] if pd.notnull(row['Descrição Material']) else row['Texto'],
+        axis=1,
+    )
 
 # imprimir os valores totais somarizado por periodo
 print(df_total.groupby('Período')['Valor'].sum())
@@ -179,8 +269,13 @@ df_sapiens = pd.read_excel(arquivo_sapiens, sheet_name='Conta contabil')
 df_sapiens.rename(columns={'CONTA SAPIENS': 'Nº conta'}, inplace=True)
 print(df_sapiens.head())
 
-# Merger o arquivo df_total pela coluna Nº conta com o df_sapiens pela coluna CONTA SAPIENS e retornar a coluna Type 07. 
-df_total = pd.merge(df_total, df_sapiens[['Nº conta', 'Type 07', 'Type 06', 'Type 05']], on='Nº conta', how='left')
+# Merger o arquivo df_total pela coluna Nº conta com o df_sapiens pela coluna CONTA SAPIENS
+df_total = pd.merge(
+    df_total,
+    df_sapiens[['Nº conta', 'Type 07', 'Type 06', 'Type 05']],
+    on='Nº conta',
+    how='left',
+)
 
 # Ler o arquivo Excel Dados SAPIENS.xlsx e a aba CC
 df_CC = pd.read_excel(arquivo_sapiens, sheet_name='CC')
@@ -189,13 +284,42 @@ df_CC = pd.read_excel(arquivo_sapiens, sheet_name='CC')
 df_CC.rename(columns={'CC SAPiens': 'Centro cst'}, inplace=True)
 
 # Merge o df_total com o df_CC pela coluna Centro cst e trazer as colunas Ofincina e USI
-df_total = pd.merge(df_total, df_CC[['Centro cst', 'Oficina', 'USI']], on='Centro cst', how='left')
+df_total = pd.merge(
+    df_total,
+    df_CC[['Centro cst', 'Oficina', 'USI']],
+    on='Centro cst',
+    how='left',
+)
 # Substituir na coluna 'USI' os valores NaN por 'Others'
 df_total['USI'] = df_total['USI'].fillna('Others')
 # Exibir as 10 primeiras linhas do df_total e as colunas de Nº conta, Type 07, Type 06, Type 05, Centro cst, Oficina e USI
-print(df_total[['Nº conta', 'Type 07', 'Type 06', 'Type 05', 'Centro cst', 'Oficina', 'USI']].head(10))
+print(
+    df_total[
+        ['Nº conta', 'Type 07', 'Type 06', 'Type 05', 'Centro cst', 'Oficina', 'USI']
+    ].head(10)
+)
 
 # %%
+# Limpar e converter tipos de dados antes de salvar parquet
+print("Limpando e convertendo tipos de dados...")
+
+# Converter coluna Ano e Período para numérico
+for col in ['Ano', 'Período']:
+    if col in df_total.columns:
+        df_total[col] = pd.to_numeric(df_total[col], errors='coerce')
+
+# Converter colunas numéricas que podem estar como string
+numeric_columns = ['Valor', 'Qtd.', 'doc.ref', 'Item']
+for col in numeric_columns:
+    if col in df_total.columns:
+        df_total[col] = pd.to_numeric(df_total[col], errors='coerce')
+
+# Substituir valores NaN por None para compatibilidade com PyArrow
+df_total = df_total.where(pd.notnull(df_total), None)
+
+print("Tipos de dados após limpeza:")
+print(df_total.dtypes)
+
 # gerar um arquivo parquet do df_total atualizado
 pasta_parquet = r"KE5Z"
 caminho_saida_atualizado = os.path.join(pasta_parquet, 'KE5Z.parquet')
@@ -206,7 +330,6 @@ print(f"Arquivo salvo em: \n {caminho_saida_atualizado}")
 caminho_saida_excel = os.path.join(pasta_parquet, 'KE5Z.xlsx')
 df_total.head(10000).to_excel(caminho_saida_excel, index=False)
 print(f"Arquivo Excel salvo em: \n {caminho_saida_excel}")
-
-
-
-
+#
+#
+#

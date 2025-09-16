@@ -5,6 +5,7 @@ import os
 import altair as alt
 import subprocess
 import sys
+import plotly.graph_objects as go
 from auth import (verificar_autenticacao, exibir_header_usuario,
                   eh_administrador, verificar_status_aprovado,
                   carregar_usuarios, salvar_usuarios, criar_hash_senha)
@@ -202,6 +203,10 @@ if eh_administrador():
     st.sidebar.markdown("---")
     st.sidebar.subheader("🔄 Atualizar Dados")
     
+    # Aviso sobre ambiente local
+    st.sidebar.info("💻 **Atenção:** A extração de dados só funciona em "
+                    "ambiente local (não funciona no Streamlit Cloud).")
+    
     # Extração local
     if st.sidebar.button("📊 Executar Extração Local", 
                          use_container_width=True):
@@ -396,8 +401,8 @@ def colorir_valores(val):
     if isinstance(val, (int, float)) and val < 0:
         return 'color: red;'
     elif isinstance(val, (int, float)) and val > 0:
-        return 'color: green;'
-    return ''
+        return 'color: green;' 
+    return '' 
 
 
 styled_df = soma_por_type.style.format({'Valor': 'R$ {:,.2f}'}).applymap(
@@ -409,7 +414,7 @@ if st.button("📥 Baixar Soma por Type (Excel)", use_container_width=True):
     with st.spinner("Gerando arquivo..."):
         excel_data_soma = exportar_excel(soma_por_type, 'KE5Z_soma_por_type.xlsx')
         
-        # Forçar download usando JavaScript
+        # Forçar download usando JavaScriptrro
         import base64
         b64 = base64.b64encode(excel_data_soma).decode()
         href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="KE5Z_soma_por_type.xlsx">💾 Clique aqui para baixar</a>'
@@ -473,3 +478,402 @@ grafico_completo = grafico_barras + rotulos
 
 # Exibir o gráfico no Streamlit
 st.altair_chart(grafico_completo, use_container_width=True)
+
+# %%
+# Seção de IA Integrada
+st.markdown("---")
+st.subheader("🤖 Assistente IA - Análise Inteligente")
+
+# Classe do Assistente IA com integração Hugging Face
+class AIAssistant:
+    def __init__(self, df_data):
+        self.df = df_data
+        self.huggingface_token = self.load_token()
+        self.api_url = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
+        
+    def load_token(self):
+        """Carrega o token do Hugging Face do arquivo .env"""
+        try:
+            if os.path.exists('.env'):
+                with open('.env', 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.startswith('HUGGINGFACE_TOKEN='):
+                            return line.split('=')[1].strip()
+        except Exception as e:
+            print(f"Erro ao carregar token: {e}")
+        return None
+    
+    def query_huggingface(self, text):
+        """Consulta a API do Hugging Face para análise de texto"""
+        if not self.huggingface_token:
+            return None
+            
+        try:
+            import requests
+            headers = {"Authorization": f"Bearer {self.huggingface_token}"}
+            
+            payload = {
+                "inputs": text,
+                "parameters": {
+                    "max_length": 100,
+                    "temperature": 0.7,
+                    "do_sample": True
+                }
+            }
+            
+            response = requests.post(self.api_url, headers=headers, json=payload, timeout=10)
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Erro na API: {response.status_code}")
+                return None
+                
+        except Exception as e:
+            print(f"Erro na consulta Hugging Face: {e}")
+            return None
+        
+    def analyze_question(self, question):
+        """Analisa a pergunta do usuário usando IA e regras locais"""
+        question_lower = question.lower()
+        
+        analysis_type = "ranking"
+        entities = {}
+        limit = None
+        confidence = 0.5
+        
+        # Detectar limite (top 10, top 20, etc.)
+        import re
+        top_match = re.search(r'top\s+(\d+)', question_lower)
+        if top_match:
+            limit = int(top_match.group(1))
+            entities['limit'] = limit
+        
+        # Detectar "X maiores"
+        maiores_match = re.search(r'(\d+)\s+maiores', question_lower)
+        if maiores_match:
+            limit = int(maiores_match.group(1))
+            entities['limit'] = limit
+        
+        # Detectar análise temporal
+        temporal_phrases = ['cada mês', 'por mês', 'valor total de cada mês', 'mensal', 'mês a mês', 'evolução temporal', 'crescimento temporal']
+        if any(phrase in question_lower for phrase in temporal_phrases):
+            analysis_type = "temporal"
+            entities['periodo'] = True
+            confidence += 0.3
+        elif any(word in question_lower for word in ['temporal', 'tempo', 'evolução', 'crescimento', 'tendência']):
+            analysis_type = "temporal"
+            entities['periodo'] = True
+            confidence += 0.2
+        
+        # Detectar Type 07
+        if any(word in question_lower for word in ['type 07', 'type07', 'tipo 07']):
+            entities['type_07'] = True
+            confidence += 0.2
+            
+        # Detectar Type 05
+        if any(word in question_lower for word in ['type 05', 'type05', 'tipo 05']):
+            entities['type_05'] = True
+            confidence += 0.2
+            
+        # Detectar Type 06
+        if any(word in question_lower for word in ['type 06', 'type06', 'tipo 06']):
+            entities['type_06'] = True
+            confidence += 0.2
+            
+        # Detectar USI
+        if any(word in question_lower for word in ['usi', 'usina', 'planta']):
+            entities['usi'] = True
+            confidence += 0.2
+            
+        # Detectar fornecedor
+        if any(word in question_lower for word in ['fornecedor', 'supplier', 'empresa']):
+            entities['fornecedor'] = True
+            confidence += 0.2
+            
+        # Detectar waterfall
+        if any(word in question_lower for word in ['waterfall', 'cascata', 'variação', 'variações']):
+            analysis_type = "waterfall"
+            confidence += 0.3
+            
+        # Detectar ranking/top
+        if any(word in question_lower for word in ['maior', 'menor', 'top', 'ranking', 'melhor', 'pior']):
+            analysis_type = "ranking"
+            confidence += 0.3
+        
+        # Consultar Hugging Face se disponível
+        ai_response = None
+        if self.huggingface_token:
+            try:
+                hf_response = self.query_huggingface(question)
+                if hf_response and isinstance(hf_response, list) and len(hf_response) > 0:
+                    ai_response = hf_response[0].get('generated_text', '')
+                    confidence += 0.1
+            except:
+                pass
+            
+        return {
+            'type': analysis_type,
+            'entities': entities,
+            'original_question': question,
+            'limit': limit,
+            'confidence': confidence,
+            'ai_response': ai_response
+        }
+    
+    def generate_sql_query(self, analysis):
+        """Gera query SQL baseada na análise"""
+        query = "SELECT "
+        
+        if analysis['type'] == 'ranking':
+            if 'type_07' in analysis['entities']:
+                query += "`Type 07`, SUM(Valor) as total_valor FROM df GROUP BY `Type 07` ORDER BY total_valor DESC"
+            elif 'type_05' in analysis['entities']:
+                query += "`Type 05`, SUM(Valor) as total_valor FROM df GROUP BY `Type 05` ORDER BY total_valor DESC"
+            elif 'type_06' in analysis['entities']:
+                query += "`Type 06`, SUM(Valor) as total_valor FROM df GROUP BY `Type 06` ORDER BY total_valor DESC"
+            elif 'fornecedor' in analysis['entities']:
+                query += "`Nome do fornecedor`, SUM(Valor) as total_valor FROM df GROUP BY `Nome do fornecedor` ORDER BY total_valor DESC"
+            elif 'usi' in analysis['entities']:
+                query += "USI, SUM(Valor) as total_valor FROM df GROUP BY USI ORDER BY total_valor DESC"
+            elif 'periodo' in analysis['entities']:
+                query += "Período, SUM(Valor) as total_valor FROM df GROUP BY Período ORDER BY total_valor DESC"
+            else:
+                query += "USI, SUM(Valor) as total_valor FROM df GROUP BY USI ORDER BY total_valor DESC"
+                
+        elif analysis['type'] == 'temporal':
+            query += "Período, SUM(Valor) as total_valor FROM df GROUP BY Período ORDER BY Período"
+            
+        elif analysis['type'] == 'waterfall':
+            query += "Período, SUM(Valor) as total_valor FROM df GROUP BY Período ORDER BY Período"
+            
+        else:
+            query += "SUM(Valor) as total_valor FROM df"
+            
+        return query
+    
+    def execute_query(self, query, limit=None):
+        """Executa a query SQL"""
+        try:
+            if 'GROUP BY' in query:
+                if '`Type 07`' in query:
+                    result = self.df.groupby('Type 07')['Valor'].sum().reset_index()
+                    result.columns = ['Type 07', 'total_valor']
+                elif '`Type 05`' in query:
+                    result = self.df.groupby('Type 05')['Valor'].sum().reset_index()
+                    result.columns = ['Type 05', 'total_valor']
+                elif '`Type 06`' in query:
+                    result = self.df.groupby('Type 06')['Valor'].sum().reset_index()
+                    result.columns = ['Type 06', 'total_valor']
+                elif '`Nome do fornecedor`' in query:
+                    result = self.df.groupby('Nome do fornecedor')['Valor'].sum().reset_index()
+                    result.columns = ['Nome do fornecedor', 'total_valor']
+                elif 'USI' in query:
+                    result = self.df.groupby('USI')['Valor'].sum().reset_index()
+                    result.columns = ['USI', 'total_valor']
+                elif 'Período' in query:
+                    result = self.df.groupby('Período')['Valor'].sum().reset_index()
+                    result.columns = ['Período', 'total_valor']
+                else:
+                    result = pd.DataFrame()
+                
+                if not result.empty:
+                    result = result.sort_values('total_valor', ascending=False).reset_index(drop=True)
+                
+                if limit and not result.empty:
+                    result = result.head(limit)
+            else:
+                if 'SUM(Valor)' in query:
+                    total = self.df['Valor'].sum()
+                    result = pd.DataFrame({'total_valor': [total]})
+                else:
+                    result = pd.DataFrame()
+            
+            return result
+        except Exception as e:
+            st.error(f"Erro na query: {str(e)}")
+            return pd.DataFrame()
+    
+    def create_visualization(self, data, analysis):
+        """Cria visualização baseada nos dados"""
+        if data.empty:
+            return None
+            
+        if analysis['type'] == 'ranking':
+            if len(data.columns) >= 2:
+                col1 = data.columns[0]
+                col2 = data.columns[1]
+                
+                # Criar gráfico de barras com Altair
+                chart = alt.Chart(data).mark_bar(color='steelblue').encode(
+                    x=alt.X(f'{col1}:N', title=col1, sort=alt.SortField(field=col2, order='descending')),
+                    y=alt.Y(f'{col2}:Q', title='Valor Total (R$)'),
+                    tooltip=[f'{col1}:N', f'{col2}:Q']
+                ).properties(
+                    title=f"Ranking por {col1}"
+                )
+                
+                # Adicionar rótulos
+                labels = chart.mark_text(
+                    align='center',
+                    baseline='bottom',
+                    dy=-5,
+                    color='white',
+                    fontSize=12,
+                    fontWeight='bold'
+                ).encode(
+                    text=alt.Text(f'{col2}:Q', format='R$ ,.2f')
+                )
+                
+                return chart + labels
+                
+        elif analysis['type'] == 'temporal':
+            if len(data.columns) >= 2:
+                col1 = data.columns[0]
+                col2 = data.columns[1]
+                chart = alt.Chart(data).mark_line(point=True, color='steelblue').encode(
+                    x=alt.X(f'{col1}:N', title=col1),
+                    y=alt.Y(f'{col2}:Q', title='Valor Total (R$)'),
+                    tooltip=[f'{col1}:N', f'{col2}:Q']
+                ).properties(
+                    title="Evolução Temporal"
+                )
+                return chart
+                
+        elif analysis['type'] == 'waterfall':
+            if len(data.columns) >= 2:
+                col1 = data.columns[0]
+                col2 = data.columns[1]
+                
+                # Criar gráfico waterfall com Plotly
+                fig = go.Figure(go.Waterfall(
+                    name="Waterfall",
+                    orientation="v",
+                    measure=["absolute"] + ["relative"] * (len(data) - 2) + ["absolute"],
+                    x=data[col1].tolist(),
+                    y=data[col2].tolist(),
+                    connector={"line": {"color": "rgb(63, 63, 63)"}},
+                ))
+                fig.update_layout(
+                    title="Análise Waterfall - Variações por Período",
+                    xaxis_title=col1,
+                    yaxis_title="Valor (R$)"
+                )
+                return fig
+                
+        return None
+    
+    def generate_response(self, analysis, data):
+        """Gera resposta textual"""
+        if data.empty:
+            return "❌ Não foi possível encontrar dados para sua pergunta."
+            
+        response = f"📊 **Análise: {analysis['type'].title()}**\n\n"
+        
+        if analysis.get('limit'):
+            response += f"🔢 **Mostrando:** Top {analysis['limit']} resultados\n\n"
+        
+        if analysis['type'] == 'ranking':
+            if len(data) > 0:
+                value_col = 'total_valor' if 'total_valor' in data.columns else data.columns[1]
+                top_item = data.iloc[0]
+                response += f"🏆 **Top 1:** {top_item.iloc[0]} - R$ {top_item[value_col]:,.2f}\n\n"
+                response += f"📈 **Total de itens:** {len(data)}"
+                if analysis.get('limit'):
+                    response += f" (limitado a {analysis['limit']})"
+                response += f"\n💰 **Valor total:** R$ {data[value_col].sum():,.2f}"
+                
+        elif analysis['type'] == 'temporal':
+            if len(data) > 0:
+                value_col = 'total_valor' if 'total_valor' in data.columns else data.columns[1]
+                response += f"📅 **Períodos analisados:** {len(data)}\n"
+                response += f"💰 **Valor total:** R$ {data[value_col].sum():,.2f}\n"
+                response += f"📊 **Média por período:** R$ {data[value_col].mean():,.2f}"
+                
+        elif analysis['type'] == 'waterfall':
+            if len(data) > 0:
+                value_col = 'total_valor' if 'total_valor' in data.columns else data.columns[1]
+                response += f"🌊 **Análise Waterfall:**\n"
+                response += f"📅 **Períodos:** {len(data)}\n"
+                response += f"💰 **Variação total:** R$ {data[value_col].sum():,.2f}"
+        
+        # Adicionar resposta da IA se disponível
+        if 'ai_response' in analysis and analysis['ai_response']:
+            response += f"\n\n🤖 **IA Hugging Face:** {analysis['ai_response']}"
+        
+        # Adicionar nível de confiança
+        if 'confidence' in analysis:
+            response += f"\n\n🎯 **Confiança da análise:** {analysis['confidence']:.1%}"
+                
+        return response
+    
+    def process_question(self, question):
+        """Processa a pergunta completa"""
+        analysis = self.analyze_question(question)
+        query = self.generate_sql_query(analysis)
+        data = self.execute_query(query, analysis.get('limit'))
+        viz = self.create_visualization(data, analysis)
+        response = self.generate_response(analysis, data)
+        
+        return {
+            'response': response,
+            'visualization': viz,
+            'data': data,
+            'analysis': analysis
+        }
+
+# Inicializar assistente com dados filtrados
+assistant = AIAssistant(df_filtrado)
+
+# Interface do chat IA
+col1, col2 = st.columns([2, 1])
+
+with col1:
+    st.write("**💬 Faça perguntas sobre os dados:**")
+    
+    # Input para pergunta
+    if prompt := st.text_input("Digite sua pergunta...", placeholder="Ex: Top 10 maiores Type 07"):
+        # Processar pergunta
+        with st.spinner("🤖 Analisando..."):
+            result = assistant.process_question(prompt)
+        
+        # Exibir resposta
+        st.write(result['response'])
+        
+        # Exibir visualização se disponível
+        if result['visualization'] is not None:
+            if result['analysis']['type'] == 'waterfall':
+                # Para waterfall, usar Plotly
+                st.plotly_chart(result['visualization'], use_container_width=True)
+            else:
+                # Para outros gráficos, usar Altair
+                st.altair_chart(result['visualization'], use_container_width=True)
+        
+        # Exibir dados se disponíveis
+        if not result['data'].empty:
+            st.subheader("📊 Dados Detalhados")
+            st.dataframe(result['data'], use_container_width=True)
+
+with col2:
+    st.write("**💡 Exemplos de perguntas:**")
+    st.write("• Top 10 maiores Type 07")
+    st.write("• 20 maiores fornecedores")
+    st.write("• Top 5 USIs")
+    st.write("• Evolução temporal")
+    st.write("• Gráfico waterfall")
+    st.write("• Valor total por período")
+    
+    st.write("**🎯 Tipos de análise:**")
+    st.write("• **Ranking:** Top N maiores")
+    st.write("• **Temporal:** Evolução no tempo")
+    st.write("• **Waterfall:** Variações")
+    
+    # Status da API Hugging Face
+    st.markdown("---")
+    st.write("**🤖 Status da IA:**")
+    if assistant.huggingface_token:
+        st.success("✅ Hugging Face configurado")
+        st.info("🤖 IA ativa para análise avançada")
+    else:
+        st.warning("⚠️ Hugging Face não configurado")
+        st.info("💡 Configure na página 'Configurar IA'")
