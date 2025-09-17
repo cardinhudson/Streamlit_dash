@@ -1,87 +1,126 @@
 @echo off
+chcp 65001 >nul
+cls
+
 echo ========================================
-echo    DASHBOARD KE5Z - INICIAR RAPIDO
+echo    DASHBOARD KE5Z - INICIALIZACAO
 echo ========================================
-echo.
-echo Iniciando Dashboard KE5Z...
-echo Inclui: Dashboard Principal + IA Local + Analise Waterfall
-echo PROJETO LIMPO: Sem APIs externas, funciona offline!
 echo.
 
-REM Verificar se Python esta instalado
+:: Verificar se Python está instalado
 python --version >nul 2>&1
-if errorlevel 1 (
-    echo ERRO: Python nao encontrado!
-    echo Instale Python 3.8+ de https://python.org
+if %errorlevel% neq 0 (
+    echo ERRO: Python nao encontrado no sistema!
+    echo Por favor, instale Python 3.8+ e adicione ao PATH.
     pause
     exit /b 1
 )
 
-echo OK: Python encontrado
+echo Python encontrado: 
 python --version
 
-REM Usar o ambiente virtual se existir
-if exist "venv\Scripts\activate.bat" (
-    echo Ativando ambiente virtual...
-    call venv\Scripts\activate.bat
-    echo OK: Ambiente virtual ativado
-) else (
-    echo Usando Python global...
-)
-
-REM Criar pastas necessarias
-if not exist "KE5Z" mkdir KE5Z
-if not exist "downloads" mkdir downloads
-
-REM Verificar se dados existem
-if not exist "KE5Z\KE5Z.parquet" (
-    echo Arquivo de dados nao encontrado!
-    echo Execute primeiro: python Extração.py
-    pause
-    exit /b 1
-)
-
-echo OK: Arquivo de dados encontrado
-
-REM Encontrar porta livre
-set PORT=8501
-:find_port
-netstat -ano | findstr ":%PORT%" >nul 2>&1
-if %errorlevel%==0 (
-    set /A PORT=%PORT%+1
-    if %PORT% GTR 8510 (
-        echo ERRO: Nenhuma porta livre encontrada
+:: Verificar se o ambiente virtual existe
+if not exist "venv" (
+    echo.
+    echo Criando ambiente virtual...
+    python -m venv venv
+    if %errorlevel% neq 0 (
+        echo ERRO: Falha ao criar ambiente virtual!
         pause
         exit /b 1
     )
-    goto find_port
+    echo Ambiente virtual criado com sucesso!
 )
 
+:: Ativar ambiente virtual
+echo.
+echo Ativando ambiente virtual...
+call venv\Scripts\activate.bat
+if %errorlevel% neq 0 (
+    echo ERRO: Falha ao ativar ambiente virtual!
+    pause
+    exit /b 1
+)
+
+:: Atualizar pip
+echo.
+echo Atualizando pip...
+python -m pip install --upgrade pip --quiet
+
+:: Instalar dependências
+echo.
+echo Verificando e instalando dependencias...
+python -m pip install -r requirements.txt --quiet
+if %errorlevel% neq 0 (
+    echo AVISO: Algumas dependencias podem ter falhado.
+    echo Tentando instalacao manual das principais...
+    python -m pip install streamlit pandas altair plotly openpyxl pyarrow --quiet
+)
+
+:: Criar diretórios necessários se não existirem
+if not exist "KE5Z" mkdir KE5Z
+if not exist "KSBB" mkdir KSBB
+if not exist "downloads" mkdir downloads
+if not exist "logs" mkdir logs
+
+:: Verificar se o arquivo de dados existe
+if not exist "KE5Z\KE5Z.parquet" (
+    echo.
+    echo AVISO: Arquivo KE5Z.parquet nao encontrado.
+    echo Tentando executar extracao de dados...
+    if exist "Extracao.py" (
+        python Extracao.py
+        if %errorlevel% neq 0 (
+            echo ERRO: Falha na extracao de dados.
+            echo Verifique se os arquivos fonte estao disponiveis.
+        )
+    ) else (
+        echo ERRO: Arquivo Extracao.py nao encontrado.
+        echo Coloque os arquivos de dados em KE5Z\KE5Z.parquet manualmente.
+    )
+)
+
+:: Encontrar porta disponível
+set PORT=8501
+:FIND_PORT
+netstat -an | findstr ":%PORT%" >nul 2>&1
+if %errorlevel% equ 0 (
+    set /a PORT+=1
+    if %PORT% lss 8511 goto FIND_PORT
+    echo ERRO: Nenhuma porta disponivel entre 8501-8510
+    pause
+    exit /b 1
+)
+
+:: Informações sobre o projeto
 echo.
 echo ========================================
-echo    DASHBOARD INICIANDO
+echo           PROJETO ATUALIZADO
 echo ========================================
-echo URL: http://localhost:%PORT%
-echo.
-echo Paginas disponiveis:
-echo - Dashboard Principal
-echo - IA Local - Assistente  
-echo - Analise Waterfall
-echo - Total Accounts
-echo - Outside TC
-echo.
-echo DICA: Mantenha esta janela aberta
-echo IA Local funciona sem APIs externas!
-echo Cores: Verde=melhor, Vermelho=pior
+echo - IA Local (sem APIs externas)
+echo - Graficos com cores padronizadas:
+echo   * Verde: Valores menores/diminuicoes
+echo   * Vermelho: Valores maiores/aumentos  
+echo   * Azul: Totais e linhas temporais
+echo   * Laranja: Categoria "Outros"
+echo - Filtros unificados em todas as paginas
+echo - Waterfall charts com logica financeira
+echo ========================================
 echo.
 
-REM Abrir navegador automaticamente apos 3 segundos
-echo Abrindo navegador em 3 segundos...
-timeout /t 3 /nobreak >nul
-start http://localhost:%PORT%
+echo Iniciando Dashboard KE5Z...
+echo Acesse: http://localhost:%PORT%
+echo Pressione Ctrl+C para parar o servidor
+echo.
 
-REM Iniciar Streamlit
+:: Aguardar um pouco e abrir navegador
+timeout /t 3 >nul
+start "" "http://localhost:%PORT%"
+
 echo Iniciando servidor...
-python -m streamlit run Dash.py --server.port %PORT% --browser.gatherUsageStats false
+python -m streamlit run Dash.py --server.port %PORT% --server.headless true
 
+:: Se chegou aqui, o servidor parou
+echo.
+echo Servidor encerrado.
 pause
