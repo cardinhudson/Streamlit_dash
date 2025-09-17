@@ -105,6 +105,8 @@ echo   * Azul: Totais e linhas temporais
 echo   * Laranja: Categoria "Outros"
 echo - Filtros unificados em todas as paginas
 echo - Waterfall charts com logica financeira
+echo - PRONTO PARA STREAMLIT CLOUD!
+echo   (Veja: DEPLOY_STREAMLIT_CLOUD.md)
 echo ========================================
 echo.
 

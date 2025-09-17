@@ -1,79 +1,91 @@
 # 🚀 Deploy no Streamlit Cloud
 
-## ⚠️ Arquivos Criados para Resolver Erro de Versão Python
+## Arquivos Preparados para Deploy
 
-### 1. `runtime.txt`
-- Especifica Python 3.11.5 (versão compatível com Streamlit Cloud)
-- **IMPORTANTE**: Este arquivo deve estar na raiz do repositório
+✅ **requirements.txt** - Dependências mínimas e compatíveis
+✅ **runtime.txt** - Python 3.11.5
+✅ **packages.txt** - Dependências do sistema (vazio)
+✅ **.streamlit/config.toml** - Configurações do app
 
-### 2. `requirements_streamlit_cloud.txt`
-- Versão simplificada das dependências
-- Remove pacotes problemáticos para o cloud
-- **USE ESTE ARQUIVO** ao fazer deploy no Streamlit Cloud
+## Passos para Deploy
 
-### 3. `.streamlit/config.toml`
-- Configurações específicas para o Streamlit Cloud
-- Desabilita modo de desenvolvimento
-- Configurações de segurança para produção
-
-### 4. `packages.txt`
-- Para dependências do sistema (se necessário)
-- Atualmente vazio
-
-## 📋 Passos para Deploy
-
-### Opção A: Renomear arquivos
+### 1. Preparar Repositório
 ```bash
-# Backup do requirements original
-mv requirements.txt requirements_local.txt
-
-# Usar versão para cloud
-mv requirements_streamlit_cloud.txt requirements.txt
+git add .
+git commit -m "Preparar para deploy Streamlit Cloud"
+git push origin main
 ```
 
-### Opção B: Especificar no Streamlit Cloud
-1. No painel do Streamlit Cloud
-2. Em "Advanced settings"
-3. Python version: `3.11.5`
-4. Requirements file: `requirements_streamlit_cloud.txt`
+### 2. Acessar Streamlit Cloud
+1. Vá para https://share.streamlit.io/
+2. Faça login com GitHub
+3. Clique em "New app"
 
-## 🔧 Configurações Recomendadas no Streamlit Cloud
+### 3. Configurar App
+- **Repository**: Seu repositório GitHub
+- **Branch**: main
+- **Main file path**: Dash.py
+- **App URL**: escolha um nome único
 
-- **Python version**: `3.11.5`
-- **Main file path**: `Dash.py`
-- **Requirements file**: `requirements_streamlit_cloud.txt` (ou `requirements.txt` se renomeou)
+### 4. Deploy
+- Clique em "Deploy!"
+- Aguarde o processo de build (2-5 minutos)
 
-## 🚨 Problemas Comuns e Soluções
+## ⚠️ Limitações no Streamlit Cloud
 
-### Erro "Unsupported major version"
-- ✅ **Solução**: Arquivo `runtime.txt` criado
-- Especifica Python 3.11.5 compatível
+### Dados
+- O arquivo `KE5Z/KE5Z.parquet` deve estar no repositório
+- Não é possível executar `Extração.py` no cloud
+- Faça o upload dos dados processados
 
-### Erro de dependências
-- ✅ **Solução**: `requirements_streamlit_cloud.txt` criado
-- Remove dependências problemáticas como `ollama`, `langchain`, etc.
+### Funcionalidades Limitadas
+- ❌ Extração automática de dados
+- ❌ Salvamento permanente de usuários
+- ✅ Visualizações e filtros funcionam normalmente
+- ✅ IA local funciona perfeitamente
 
-### Erro de autenticação
-- ⚠️ **Atenção**: O sistema de login pode não funcionar no cloud
-- Considere desabilitar autenticação para versão pública
-- Ou implementar autenticação via Streamlit Cloud
+## 📁 Estrutura Necessária no Repositório
 
-## 🔒 Segurança para Produção
-
-Se for versão pública, considere:
-1. Remover sistema de autenticação local
-2. Usar dados de exemplo (não dados reais)
-3. Limitar funcionalidades sensíveis
-
-## 📁 Estrutura Final para Deploy
 ```
-projeto/
-├── runtime.txt                    # ✅ Versão Python
-├── requirements.txt               # ✅ Dependências (renomeado)
-├── packages.txt                   # ✅ Dependências sistema
-├── .streamlit/config.toml         # ✅ Configurações
-├── Dash.py                        # ✅ App principal
-├── auth.py                        # ⚠️  Pode precisar ajustes
-├── pages/                         # ✅ Páginas
-└── KE5Z/                          # ✅ Dados (se públicos)
+/
+├── Dash.py                    # Arquivo principal
+├── requirements.txt           # Dependências
+├── runtime.txt               # Versão Python
+├── packages.txt              # Dependências sistema
+├── .streamlit/config.toml    # Configurações
+├── auth.py                   # Autenticação
+├── usuarios.json             # Dados de usuários
+├── KE5Z/
+│   └── KE5Z.parquet         # DADOS OBRIGATÓRIOS
+└── pages/
+    ├── IA_Unificada.py
+    ├── Waterfall_Analysis.py
+    └── Total accounts.py
 ```
+
+## 🔧 Troubleshooting
+
+### Erro de Dependências
+- Use apenas as dependências listadas em `requirements.txt`
+- Evite versões específicas (>=x.x.x)
+
+### Erro de Python
+- Mantenha `runtime.txt` com `python-3.11.5`
+
+### Dados Não Carregam
+- Verifique se `KE5Z/KE5Z.parquet` está no repositório
+- Arquivo deve ter menos de 100MB
+
+### App Não Inicia
+- Verifique se `Dash.py` está na raiz
+- Confirme se todas as importações estão corretas
+
+## 📊 Status do Deploy
+
+Após deploy bem-sucedido:
+- ✅ Dashboard principal funcional
+- ✅ Todas as páginas acessíveis
+- ✅ Filtros funcionando
+- ✅ Gráficos renderizando
+- ✅ IA local operacional
+- ⚠️ Usuários temporários (reset a cada deploy)
