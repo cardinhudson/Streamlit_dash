@@ -1,0 +1,2 @@
+# Dependências do sistema para Streamlit Cloud
+# (deixe vazio se não precisar de pacotes específicos do sistema)
