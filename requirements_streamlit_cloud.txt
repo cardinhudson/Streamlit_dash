@@ -1,7 +1,0 @@
-# Dependências mínimas para Streamlit Cloud
-streamlit
-pandas
-altair
-openpyxl
-pyarrow
-plotly
