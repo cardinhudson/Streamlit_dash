@@ -1,83 +1,90 @@
 @echo off
-chcp 65001 >nul
 echo ========================================
-echo    DASHBOARD KE5Z - ABERTURA SIMPLES
+echo    DASHBOARD KE5Z - INICIAR RAPIDO
 echo ========================================
 echo.
-echo 🚀 Iniciando Dashboard KE5Z...
+echo Iniciando Dashboard KE5Z...
+echo Inclui: Dashboard Principal + IA Local + Analise Waterfall
+echo PROJETO LIMPO: Sem APIs externas, funciona offline!
 echo.
 
-REM Verificar se Python está disponível
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo ❌ Python não encontrado!
-    echo 💡 Instale Python em: https://python.org
+    echo ERRO: Python nao encontrado!
+    echo Instale Python 3.8+ de https://python.org
     pause
     exit /b 1
 )
 
-REM Verificar dependências básicas
-echo 🔍 Verificando dependências...
-python -c "import streamlit, pandas, plotly" >nul 2>&1
-if errorlevel 1 (
-    echo ❌ Dependências não encontradas!
-    echo 🔧 Instalando dependências...
-    python -m pip install streamlit pandas plotly altair openpyxl pyarrow numpy requests
+echo OK: Python encontrado
+python --version
+
+if not exist "venv\Scripts\activate.bat" (
+    echo Criando ambiente virtual...
+    python -m venv venv
     if errorlevel 1 (
-        echo ❌ Erro ao instalar dependências!
-        pause
-        exit /b 1
+        echo ERRO: Nao foi possivel criar ambiente virtual
+        echo Tentando usar Python global...
+        goto :use_global_python
     )
+    echo OK: Ambiente virtual criado
+) else (
+    echo OK: Ambiente virtual encontrado
 )
 
-REM Verificar arquivo de dados
+echo Ativando ambiente virtual...
+call venv\Scripts\activate.bat
+if errorlevel 1 (
+    echo ERRO: Nao foi possivel ativar ambiente virtual
+    goto :use_global_python
+)
+
+echo Instalando dependencias...
+python -m pip install --upgrade pip --quiet
+python -m pip install -r requirements.txt --quiet
+if errorlevel 1 (
+    python -m pip install streamlit pandas plotly altair openpyxl pyarrow --quiet
+)
+
+if not exist "KE5Z" mkdir KE5Z
+if not exist "KSBB" mkdir KSBB
+if not exist "downloads" mkdir downloads
+
 if not exist "KE5Z\KE5Z.parquet" (
-    echo ❌ Arquivo de dados não encontrado!
-    echo 🔧 Executando extração...
+    echo Executando extracao de dados...
     python Extração.py
     if errorlevel 1 (
-        echo ❌ Erro na extração!
+        echo ERRO: Falha na extracao de dados
         pause
         exit /b 1
     )
 )
 
-echo ✅ Tudo pronto!
 echo.
-echo 📊 Abrindo Dashboard...
-echo 🌐 URL: http://localhost:8501
+echo Abrindo Dashboard KE5Z...
+echo URL: http://localhost:8501
 echo.
-echo 🎯 Páginas disponíveis:
-echo    • Dashboard Principal
-echo    • IUD - Assistente IA
-echo    • Análise Waterfall
-echo    • Total Accounts
-echo    • Outside TC
-echo.
-echo 💡 Pressione Ctrl+C para parar o servidor
+echo Mantenha esta janela aberta
 echo.
 
-REM Encontrar porta livre (8501..8510)
-set PORT=8501
-set MAXPORT=8510
-:find_port_simple
-for /f "tokens=*" %%a in ('netstat -ano ^| findstr /R ":%PORT%"') do (
-  set INUSE=1
-)
-if defined INUSE (
-  echo ⚠️  Porta %PORT% em uso. Tentando próxima...
-  set INUSE=
-  set /A PORT=%PORT%+1
-  if %PORT% GTR %MAXPORT% (
-    echo ❌ Nenhuma porta livre entre 8501 e %MAXPORT%.
-    pause
-    exit /b 1
-  )
-  goto find_port_simple
-)
-echo ✅ Usando porta %PORT%
+python -m streamlit run Dash.py --server.port 8501
+goto :end
 
-REM Abrir dashboard
-python -m streamlit run Dash.py --server.port %PORT%
+:use_global_python
+echo.
+echo Usando Python global...
+python -m pip install --user streamlit pandas plotly altair openpyxl pyarrow --quiet
 
+if not exist "KE5Z" mkdir KE5Z
+if not exist "KSBB" mkdir KSBB
+if not exist "downloads" mkdir downloads
+
+echo.
+echo Abrindo Dashboard KE5Z...
+echo URL: http://localhost:8501
+echo.
+
+python -m streamlit run Dash.py --server.port 8501
+
+:end
 pause

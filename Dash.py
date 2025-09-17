@@ -86,7 +86,9 @@ st.sidebar.title("Filtros")
 
 # Filtro 1: USINA - Incluir todas as opções de USI (incluindo 'Others'). Selecione a opção "Todos" para todas as USINAS
 usina_opcoes = ["Todos"] + df_total['USI'].dropna().unique().tolist()
-usina_selecionada = st.sidebar.multiselect("Selecione a USINA:", usina_opcoes, default=["Todos"])
+# Definir padrão como "Veículos" se existir, senão "Todos"
+default_usina = ["Veículos"] if "Veículos" in usina_opcoes else ["Todos"]
+usina_selecionada = st.sidebar.multiselect("Selecione a USINA:", usina_opcoes, default=default_usina)
 
 # Filtrar o DataFrame com base na USI
 if "Todos" in usina_selecionada or not usina_selecionada:  # Se "Todos" for selecionado ou nada for selecionado
@@ -114,6 +116,34 @@ conta_contabil_selecionadas = st.sidebar.multiselect("Selecione a Conta contabil
 # Filtrar o DataFrame com base na Conta contabil
 if conta_contabil_selecionadas:
     df_filtrado = df_filtrado[df_filtrado['Nº conta'].isin(conta_contabil_selecionadas)]
+
+# Filtro 5: Fornecedor (opcional)
+if 'Fornecedor' in df_filtrado.columns:
+    fornecedor_opcoes = ["Todos"] + sorted(df_filtrado['Fornecedor'].dropna().astype(str).unique().tolist())
+    fornecedores_sel = st.sidebar.multiselect("Selecione o Fornecedor:", fornecedor_opcoes, default=["Todos"])
+    if fornecedores_sel and "Todos" not in fornecedores_sel:
+        df_filtrado = df_filtrado[df_filtrado['Fornecedor'].astype(str).isin(fornecedores_sel)]
+
+# Filtro 6: Type 05 (opcional)
+if 'Type 05' in df_filtrado.columns:
+    type05_opcoes = ["Todos"] + sorted(df_filtrado['Type 05'].dropna().astype(str).unique().tolist())
+    type05_sel = st.sidebar.multiselect("Selecione o Type 05:", type05_opcoes, default=["Todos"])
+    if type05_sel and "Todos" not in type05_sel:
+        df_filtrado = df_filtrado[df_filtrado['Type 05'].astype(str).isin(type05_sel)]
+
+# Filtro 7: Type 06 (opcional)
+if 'Type 06' in df_filtrado.columns:
+    type06_opcoes = ["Todos"] + sorted(df_filtrado['Type 06'].dropna().astype(str).unique().tolist())
+    type06_sel = st.sidebar.multiselect("Selecione o Type 06:", type06_opcoes, default=["Todos"])
+    if type06_sel and "Todos" not in type06_sel:
+        df_filtrado = df_filtrado[df_filtrado['Type 06'].astype(str).isin(type06_sel)]
+
+# Filtro 8: Type 07 (opcional)
+if 'Type 07' in df_filtrado.columns:
+    type07_opcoes = ["Todos"] + sorted(df_filtrado['Type 07'].dropna().astype(str).unique().tolist())
+    type07_sel = st.sidebar.multiselect("Selecione o Type 07:", type07_opcoes, default=["Todos"])
+    if type07_sel and "Todos" not in type07_sel:
+        df_filtrado = df_filtrado[df_filtrado['Type 07'].astype(str).isin(type07_sel)]
 
 # Exibir o número de linhas e colunas do DataFrame filtrado e a soma do valor total
 st.sidebar.write(f"Número de linhas: {df_filtrado.shape[0]}")
@@ -487,54 +517,11 @@ st.altair_chart(grafico_completo, use_container_width=True)
 st.markdown("---")
 st.subheader("🤖 Assistente IA - Análise Inteligente")
 
-# Classe do Assistente IA com integração Hugging Face
+# Classe do Assistente IA Local (sem APIs externas)
 class AIAssistant:
     def __init__(self, df_data):
         self.df = df_data
-        self.huggingface_token = self.load_token()
-        self.api_url = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
         
-    def load_token(self):
-        """Carrega o token do Hugging Face do arquivo .env"""
-        try:
-            if os.path.exists('.env'):
-                with open('.env', 'r', encoding='utf-8') as f:
-                    for line in f:
-                        if line.startswith('HUGGINGFACE_TOKEN='):
-                            return line.split('=')[1].strip()
-        except Exception as e:
-            print(f"Erro ao carregar token: {e}")
-        return None
-    
-    def query_huggingface(self, text):
-        """Consulta a API do Hugging Face para análise de texto"""
-        if not self.huggingface_token:
-            return None
-            
-        try:
-            import requests
-            headers = {"Authorization": f"Bearer {self.huggingface_token}"}
-            
-            payload = {
-                "inputs": text,
-                "parameters": {
-                    "max_length": 100,
-                    "temperature": 0.7,
-                    "do_sample": True
-                }
-            }
-            
-            response = requests.post(self.api_url, headers=headers, json=payload, timeout=10)
-            
-            if response.status_code == 200:
-                return response.json()
-            else:
-                print(f"Erro na API: {response.status_code}")
-                return None
-                
-        except Exception as e:
-            print(f"Erro na consulta Hugging Face: {e}")
-            return None
         
     def analyze_question(self, question):
         """Analisa a pergunta do usuário usando IA e regras locais"""
@@ -604,16 +591,7 @@ class AIAssistant:
             analysis_type = "ranking"
             confidence += 0.3
         
-        # Consultar Hugging Face se disponível
-        ai_response = None
-        if self.huggingface_token:
-            try:
-                hf_response = self.query_huggingface(question)
-                if hf_response and isinstance(hf_response, list) and len(hf_response) > 0:
-                    ai_response = hf_response[0].get('generated_text', '')
-                    confidence += 0.1
-            except:
-                pass
+        # Análise local (sem APIs externas)
             
         return {
             'type': analysis_type,
@@ -621,7 +599,6 @@ class AIAssistant:
             'original_question': question,
             'limit': limit,
             'confidence': confidence,
-            'ai_response': ai_response
         }
     
     def generate_sql_query(self, analysis):
@@ -806,9 +783,6 @@ class AIAssistant:
                 response += f"📅 **Períodos:** {len(data)}\n"
                 response += f"💰 **Variação total:** R$ {data[value_col].sum():,.2f}"
         
-        # Adicionar resposta da IA se disponível
-        if 'ai_response' in analysis and analysis['ai_response']:
-            response += f"\n\n🤖 **IA Hugging Face:** {analysis['ai_response']}"
         
         # Adicionar nível de confiança
         if 'confidence' in analysis:
@@ -877,12 +851,8 @@ with col2:
     st.write("• **Temporal:** Evolução no tempo")
     st.write("• **Waterfall:** Variações")
     
-    # Status da API Hugging Face
+    # Status da IA Local
     st.markdown("---")
     st.write("**🤖 Status da IA:**")
-    if assistant.huggingface_token:
-        st.success("✅ Hugging Face configurado")
-        st.info("🤖 IA ativa para análise avançada")
-    else:
-        st.warning("⚠️ Hugging Face não configurado")
-        st.info("💡 Configure na página 'Configurar IA'")
+    st.success("✅ IA Local ativa")
+    st.info("📊 Análise baseada em regras e padrões locais")

@@ -1,6 +1,6 @@
 # 📊 Dashboard KE5Z - Streamlit
 
-Dashboard interativo para visualização de dados TC - KE5Z com sistema de autenticação.
+Dashboard interativo para visualização de dados TC - KE5Z com sistema de autenticação e IA Local (sem APIs externas).
 
 ## 🚀 COMO USAR (Para Colaboradores)
 
@@ -249,9 +249,28 @@ st.markdown("---")
 st.write("Conteúdo da nova página protegida")
 ```
 
+## 🧹 Projeto Limpo (Versão Atual)
+
+### ✅ **SEM APIs Externas**
+- **OpenAI, Hugging Face, LangChain**: Completamente removidos
+- **IA Local**: Baseada em regras e padrões
+- **Deploy Simplificado**: Sem tokens ou chaves API
+- **Offline First**: Funciona sem internet
+
+### 🤖 **IA Assistente Local**
+- Análise inteligente baseada em palavras-chave
+- Suporte a: Ranking, Temporal, Waterfall
+- Exemplos: "Top 10 Type 07", "Evolução temporal", "Gráfico waterfall"
+
+### 🚀 **Deploy no Streamlit Cloud**
+- Arquivos prontos: `runtime.txt`, `requirements_minimal.txt`
+- Python 3.11.5 configurado
+- Zero dependências problemáticas
+
 ## 📝 Notas
 
 - O arquivo `usuarios.json` contém dados sensíveis e não deve ser versionado
 - O ambiente virtual (`venv/`) não deve ser versionado
 - Use sempre o ambiente virtual para evitar conflitos de dependências
 - **IMPORTANTE**: Sempre chame `verificar_autenticacao()` no início de cada página
+- **NOVO**: Projeto totalmente independente de APIs externas

@@ -350,11 +350,8 @@ df_total = pd.merge(
     how='left',
 )
 
-# Excluir a coluna Fornecedor
-df_total.drop(columns=['Fornecedor'], inplace=True)
 # mudar o nome da coluna Nome do fornecedor para Fornecedor
 df_total.rename(columns={'Nome do fornecedor': 'Fornecedor'}, inplace=True)
-
 
 
 
@@ -374,6 +371,31 @@ print(f"Arquivo Excel salvo em: \n {caminho_saida_excel}")
 # Salvar arquivo em excel com a coluna 'USI' filtado em 'Veículos', 'TC Ext' e 'LC'
 #  localizar o caminho em qualquer PC Stellantis\Hebdo FGx - Documents\Overheads\PBI 2025\09 - Sapiens\Extração PBI
 # Monta o caminho absoluto a partir do diretório home do usuário, garantindo compatibilidade em qualquer PC
+
+# organizar a ordem das colunas em Período	Nºconta	Centrocst	doc.ref.	Dt.lçto.	Cen.lucro	 Valor 	QTD	Type 05	Type 06	Account	USI	Oficina	Doc.compra	Texto breve	Fornecedor	Material	DESCRIÇÃO SAPIENS	Usuário	Cofor	Tipo
+df_total = df_total[['Período', 'Nº conta', 'Centro cst', 'doc.ref', 'Dt.lçto.', 'Cen.lucro', 'Valor', 'Qtd.', 'Type 05', 'Type 06', 'Type 07', 'USI', 'Oficina', 'Doc.compra', 'Texto', 'Fornecedor', 'Material', 'Usuário', 'Fornec.', 'Tipo']]
+
+# mudar os nomes das colunas para Nºconta, Centrocst, Nºdoc.ref., QTD, Texto
+df_total.rename(columns={'Texto': 'Texto breve'}, inplace=True)
+df_total.rename(columns={'Qtd.': 'QTD'}, inplace=True)
+df_total.rename(columns={'Nº conta': 'Nºconta', 'Centro cst': 'Centrocst', 'doc.ref': 'Nºdoc.ref.'}, inplace=True)
+# Mudar o nome da coluna Type 07 para Account
+df_total.rename(columns={'Type 07': 'Account'}, inplace=True)
+# Mudar o nome da coluna 'Periodo' para Mes
+df_total.rename(columns={'Período': 'Mes'}, inplace=True)
+
+# Criar uma coluna com os meses minusculos baseados na coluna 'Mes', sendo mes = 1 = janeiro, mes = 2 = fevereiro e assim sucessivamente
+# a coluna Mes deve ser string
+df_total['Período'] = df_total['Mes'].astype(str)
+df_total['Período'] = df_total['Mes'].apply(lambda x: 'janeiro' if x == 1 else 'fevereiro' if x == 2 else 'março' if x == 3 else 'abril' if x == 4 else 'maio' if x == 5 else 'junho' if x == 6 else 'julho' if x == 7 else 'agosto' if x == 8 else 'setembro' if x == 9 else 'outubro' if x == 10 else 'novembro' if x == 11 else 'dezembro')
+
+# Trazer coluna 'mes' para a primeira posição e a coluna 'Período' para a segunda posição do DataFrame
+colunas = ['Mes', 'Período'] + [col for col in df_total.columns if col != 'Mes' and col != 'Período']
+df_total = df_total[colunas]
+
+
+
+
 caminho_saida_excel_usi = os.path.join(
     os.path.expanduser("~"),
     "Stellantis",
