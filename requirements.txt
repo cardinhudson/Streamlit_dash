@@ -1,4 +1,4 @@
-# Dependências essenciais do Dashboard KE5Z (sem APIs externas)
+# Dependências essenciais do Dashboard KE5Z (projeto limpo - sem APIs externas)
 streamlit>=1.28.0
 pandas>=2.0.0
 altair>=5.0.0
@@ -6,6 +6,20 @@ plotly>=5.17.0
 openpyxl>=3.1.0
 pyarrow>=12.0.0
 
-# Dependências básicas
+# Dependências para autenticação e manipulação de dados
+hashlib2>=1.0.1
+datetime
+os-sys
+subprocess32>=3.5.4
+
+# Dependências básicas do sistema
 requests>=2.31.0
 certifi>=2024.2.2
+
+# Dependências para Excel e manipulação de arquivos
+xlsxwriter>=3.1.0
+io-tools>=0.3.0
+
+# Dependências para gráficos e visualização
+matplotlib>=3.7.0
+seaborn>=0.12.0
