@@ -66,3 +66,4 @@
 ---
 
 **✨ Agora o dashboard abre diretamente com um simples duplo clique!**
+

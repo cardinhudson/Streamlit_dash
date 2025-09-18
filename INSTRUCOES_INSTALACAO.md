@@ -102,3 +102,4 @@ Para problemas ou dúvidas:
 3. Verifique os logs no terminal
 
 **✨ O Dashboard está pronto para ser usado em qualquer PC com Python!**
+

@@ -77,3 +77,4 @@ streamlit run Dash.py --server.port 8501
 echo.
 echo Dashboard encerrado.
 pause
+
