@@ -382,7 +382,7 @@ st.altair_chart(grafico_completo, use_container_width=True)
 # Exibir 'tabela filtrada com linhas sendo a USI e as colunas sendo o 'Período' e os valores sendo a soma do 'Valor' e incluir valor do total na última linha e coluna
 df_pivot = df_filtrado.pivot_table(index='USI', columns='Período', values='Valor', aggfunc='sum', margins=True, margins_name='Total', fill_value=0)
 st.subheader("Tabela Dinâmica - Soma do Valor por USI e Período")
-st.dataframe(df_pivot.style.format('R$ {:,.2f}').applymap(lambda x: 'color: #e74c3c; font-weight: bold;' if x < 0 else 'color: #27ae60; font-weight: bold;' if x > 0 else '', subset=pd.IndexSlice[:, :]))  # Formatar como moeda com cores modernas
+st.dataframe(df_pivot.style.format('R$ {:,.2f}').map(lambda x: 'color: #e74c3c; font-weight: bold;' if x < 0 else 'color: #27ae60; font-weight: bold;' if x > 0 else '', subset=pd.IndexSlice[:, :]))  # Formatar como moeda com cores modernas
 
 # Função para exportar uma única tabela para Excel
 def exportar_excel(df, nome_arquivo):
@@ -436,7 +436,7 @@ def colorir_valores(val):
     return '' 
 
 
-styled_df = soma_por_type.style.format({'Valor': 'R$ {:,.2f}'}).applymap(
+styled_df = soma_por_type.style.format({'Valor': 'R$ {:,.2f}'}).map(
     colorir_valores, subset=['Valor'])
 st.dataframe(styled_df)
 
